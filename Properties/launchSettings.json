@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "AudioMixerWin (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "AudioMixerWin (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

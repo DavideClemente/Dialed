@@ -1,0 +1,48 @@
+<UserControl
+    x:Class="AudioMixerWin.Core.Controls.KnobCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Border
+        CornerRadius="24"
+        BorderThickness="2"
+        Padding="20"
+        Margin="10">
+
+        <Grid>
+
+            <Button
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                Content="⚙"
+                Click="OnSettingsClick"/>
+
+            <StackPanel Margin="0,20,0,0">
+
+                <TextBlock
+                    Text="{x:Bind Channel.AppName, Mode=OneWay}"
+                    FontSize="28"
+                    FontWeight="SemiBold"/>
+
+                <TextBlock
+                    Text="{x:Bind Channel.KnobLabel, Mode=OneWay}"
+                    Opacity="0.7"
+                    Margin="0,4,0,20"/>
+
+                <Slider
+                    Value="{x:Bind Channel.Volume, Mode=TwoWay}"
+                    Minimum="0"
+                    Maximum="100"
+                    Height="32"/>
+
+                <TextBlock
+                    Text="{x:Bind FormatPercent(Channel.Volume), Mode=OneWay}"
+                    HorizontalAlignment="Right"
+                    Margin="0,8,0,0"/>
+
+            </StackPanel>
+
+        </Grid>
+
+    </Border>
+</UserControl>

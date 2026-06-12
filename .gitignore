@@ -1,0 +1,14 @@
+# Build artifacts
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Rider / JetBrains
+.idea/
+
+# Claude Code local settings
+.claude/settings.local.json
