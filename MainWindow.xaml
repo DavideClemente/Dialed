@@ -40,6 +40,7 @@
             PointerExited="OnSplitterPointerExited"
             PointerPressed="OnSplitterPointerPressed"
             PointerMoved="OnSplitterPointerMoved"
-            PointerReleased="OnSplitterPointerReleased" />
+            PointerReleased="OnSplitterPointerReleased"
+            PointerCaptureLost="OnSplitterPointerCaptureLost" />
     </Grid>
 </Window>

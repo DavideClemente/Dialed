@@ -74,8 +74,23 @@ namespace AudioMixerWin
 
         private void OnSplitterPointerReleased(object sender, PointerRoutedEventArgs e)
         {
-            _isDraggingSplitter = false;
             PaneSplitter.ReleasePointerCapture(e.Pointer);
+            EndSplitterDrag();
+        }
+
+        private void OnSplitterPointerCaptureLost(object sender, PointerRoutedEventArgs e)
+        {
+            // PointerCaptureLost means capture is already gone; do not call
+            // ReleasePointerCapture here as it would be redundant/could throw.
+            EndSplitterDrag();
+        }
+
+        private void EndSplitterDrag()
+        {
+            if (!_isDraggingSplitter)
+                return;
+
+            _isDraggingSplitter = false;
             PaneSplitter.Background = new SolidColorBrush(Colors.Transparent);
             ViewModel.NavPaneWidth = NavView.OpenPaneLength;
         }
