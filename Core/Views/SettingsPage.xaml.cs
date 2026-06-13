@@ -57,12 +57,6 @@ public sealed partial class SettingsPage : Page
         ViewModel.UnhideProcessCommand.Execute(processName);
     }
 
-    private void OnComPortTextSubmitted(ComboBox sender, ComboBoxTextSubmittedEventArgs args)
-    {
-        ViewModel.ComPort = args.Text;
-        args.Handled = true;
-    }
-
     private static int GetPortNumber(string portName) =>
         int.TryParse(portName.AsSpan(3), out var number) ? number : int.MaxValue;
 }
