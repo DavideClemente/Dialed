@@ -1,3 +1,4 @@
+using System;
 using System.IO.Ports;
 using AudioMixerWin.Core.Models;
 using AudioMixerWin.Core.ViewModels;
@@ -8,6 +9,8 @@ namespace AudioMixerWin.Core.Views;
 
 public sealed partial class SettingsPage : Page
 {
+    private readonly DispatcherTimer _hideInfoBarTimer = new() { Interval = TimeSpan.FromSeconds(2) };
+
     public MainViewModel ViewModel { get; }
 
     public string[] PortNames { get; } = SerialPort.GetPortNames();
@@ -18,6 +21,12 @@ public sealed partial class SettingsPage : Page
     {
         ViewModel = viewModel;
         InitializeComponent();
+
+        _hideInfoBarTimer.Tick += (_, _) =>
+        {
+            _hideInfoBarTimer.Stop();
+            HideInfoBar.IsOpen = false;
+        };
     }
 
     private void OnHideClick(object sender, RoutedEventArgs e)
@@ -30,6 +39,8 @@ public sealed partial class SettingsPage : Page
         {
             HideInfoBar.Message = blocked;
             HideInfoBar.IsOpen = true;
+            _hideInfoBarTimer.Stop();
+            _hideInfoBarTimer.Start();
         }
     }
 

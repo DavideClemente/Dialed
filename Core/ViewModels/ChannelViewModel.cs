@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Linq;
 using AudioMixerWin.Core.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.UI.Xaml.Media;
 
 namespace AudioMixerWin.Core.ViewModels;
 
@@ -27,6 +29,9 @@ public partial class ChannelViewModel : ObservableObject
     [ObservableProperty]
     private double volume;
 
+    [ObservableProperty]
+    private ImageSource? iconSource;
+
     public ChannelViewModel(
         int knobIndex,
         string appName,
@@ -46,12 +51,23 @@ public partial class ChannelViewModel : ObservableObject
         _onHideSession = onHideSession;
         this.appName = appName;
         volume = audioManager.GetVolume(appName) * 100;
+
+        AvailableSessions.CollectionChanged += OnAvailableSessionsChanged;
+        UpdateIconSource();
     }
 
     partial void OnAppNameChanged(string value)
     {
         Volume = _audioManager.GetVolume(value) * 100;
+        UpdateIconSource();
         _onSettingsChanged();
+    }
+
+    private void OnAvailableSessionsChanged(object? sender, NotifyCollectionChangedEventArgs e) => UpdateIconSource();
+
+    private void UpdateIconSource()
+    {
+        IconSource = AvailableSessions.FirstOrDefault(s => s.ProcessName.Equals(AppName, StringComparison.OrdinalIgnoreCase))?.IconSource;
     }
 
     partial void OnVolumeChanged(double value) =>
@@ -71,5 +87,9 @@ public partial class ChannelViewModel : ObservableObject
 
     public string? HideSession(AudioSession session) => _onHideSession(session);
 
-    public void Remove() => _onRemove(this);
+    public void Remove()
+    {
+        AvailableSessions.CollectionChanged -= OnAvailableSessionsChanged;
+        _onRemove(this);
+    }
 }

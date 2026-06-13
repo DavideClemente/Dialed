@@ -19,10 +19,18 @@
 
             <StackPanel Margin="0,20,0,0">
 
-                <TextBlock
-                    Text="{x:Bind Channel.AppName, Mode=OneWay}"
-                    FontSize="28"
-                    FontWeight="SemiBold"/>
+                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <Image
+                        Source="{x:Bind Channel.IconSource, Mode=OneWay}"
+                        Width="32"
+                        Height="32"/>
+
+                    <TextBlock
+                        Text="{x:Bind Channel.AppName, Mode=OneWay}"
+                        FontSize="28"
+                        FontWeight="SemiBold"
+                        VerticalAlignment="Center"/>
+                </StackPanel>
 
                 <TextBlock
                     Text="{x:Bind Channel.KnobLabel, Mode=OneWay}"

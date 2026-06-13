@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Microsoft.UI.Xaml.Media;
 
 namespace AudioMixerWin.Core.Models;
 
@@ -9,6 +10,7 @@ public class AudioSession : INotifyPropertyChanged
     private string _processName = "";
     private string _displayName = "";
     private float _volume;
+    private ImageSource? _iconSource;
 
     public string ProcessName
     {
@@ -26,6 +28,12 @@ public class AudioSession : INotifyPropertyChanged
     {
         get => _volume;
         set => SetField(ref _volume, value);
+    }
+
+    public ImageSource? IconSource
+    {
+        get => _iconSource;
+        set => SetField(ref _iconSource, value);
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

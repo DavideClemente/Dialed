@@ -1,3 +1,4 @@
+using System;
 using System.Collections.ObjectModel;
 using AudioMixerWin.Core.Models;
 using AudioMixerWin.Core.ViewModels;
@@ -9,6 +10,7 @@ namespace AudioMixerWin.Core.Controls;
 public sealed partial class AppPickerDialog : ContentDialog
 {
     private readonly ChannelViewModel _channel;
+    private readonly DispatcherTimer _hideInfoBarTimer = new() { Interval = TimeSpan.FromSeconds(2) };
 
     public ObservableCollection<AudioSession> SelectableSessions { get; }
 
@@ -19,6 +21,12 @@ public sealed partial class AppPickerDialog : ContentDialog
         _channel = channel;
         SelectableSessions = new ObservableCollection<AudioSession>(_channel.GetSelectableSessions());
         InitializeComponent();
+
+        _hideInfoBarTimer.Tick += (_, _) =>
+        {
+            _hideInfoBarTimer.Stop();
+            HideInfoBar.IsOpen = false;
+        };
     }
 
     private void OnHideClick(object sender, RoutedEventArgs e)
@@ -31,6 +39,8 @@ public sealed partial class AppPickerDialog : ContentDialog
         {
             HideInfoBar.Message = blocked;
             HideInfoBar.IsOpen = true;
+            _hideInfoBarTimer.Stop();
+            _hideInfoBarTimer.Start();
         }
         else
         {
