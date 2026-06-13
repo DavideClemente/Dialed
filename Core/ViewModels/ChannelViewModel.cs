@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using AudioMixerWin.Core.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -8,9 +10,10 @@ namespace AudioMixerWin.Core.ViewModels;
 public partial class ChannelViewModel : ObservableObject
 {
     private readonly AudioManager _audioManager;
+    private readonly ObservableCollection<ChannelViewModel> _channels;
     private readonly Action<ChannelViewModel> _onRemove;
     private readonly Action _onSettingsChanged;
-    private readonly Action<AudioSession> _onHideSession;
+    private readonly Func<AudioSession, string?> _onHideSession;
 
     public int KnobIndex { get; }
 
@@ -29,13 +32,15 @@ public partial class ChannelViewModel : ObservableObject
         string appName,
         AudioManager audioManager,
         ObservableCollection<AudioSession> availableSessions,
+        ObservableCollection<ChannelViewModel> channels,
         Action<ChannelViewModel> onRemove,
         Action onSettingsChanged,
-        Action<AudioSession> onHideSession)
+        Func<AudioSession, string?> onHideSession)
     {
         KnobIndex = knobIndex;
         _audioManager = audioManager;
         AvailableSessions = availableSessions;
+        _channels = channels;
         _onRemove = onRemove;
         _onSettingsChanged = onSettingsChanged;
         _onHideSession = onHideSession;
@@ -52,7 +57,19 @@ public partial class ChannelViewModel : ObservableObject
     partial void OnVolumeChanged(double value) =>
         _audioManager.SetVolume(AppName, (float)(value / 100.0));
 
-    public void HideSession(AudioSession session) => _onHideSession(session);
+    public IEnumerable<AudioSession> GetSelectableSessions()
+    {
+        var takenByOthers = new HashSet<string>(
+            _channels.Where(c => c != this).Select(c => c.AppName),
+            StringComparer.OrdinalIgnoreCase);
+
+        return AvailableSessions.Where(s => !takenByOthers.Contains(s.ProcessName));
+    }
+
+    public static ChannelViewModel? FindAssignedChannel(IEnumerable<ChannelViewModel> channels, string processName) =>
+        channels.FirstOrDefault(c => c.AppName.Equals(processName, StringComparison.OrdinalIgnoreCase));
+
+    public string? HideSession(AudioSession session) => _onHideSession(session);
 
     public void Remove() => _onRemove(this);
 }

@@ -34,6 +34,8 @@ public partial class MainViewModel : ObservableObject
 
     public ObservableCollection<AudioSession> AvailableSessions { get; } = new();
 
+    public ObservableCollection<string> HiddenProcesses { get; } = new();
+
     public MainViewModel()
     {
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
@@ -43,6 +45,9 @@ public partial class MainViewModel : ObservableObject
         comPort = _settings.ComPort;
         baudRate = _settings.BaudRate;
         refreshIntervalSeconds = _settings.RefreshIntervalSeconds;
+
+        foreach (var process in _settings.ExcludedProcesses)
+            HiddenProcesses.Add(process);
 
         foreach (var config in _settings.Channels)
             AddChannelInternal(config.AppName, config.KnobIndex, save: false);
@@ -91,7 +96,7 @@ public partial class MainViewModel : ObservableObject
     private void AddChannelInternal(string appName, int? knobIndex = null, bool save = true)
     {
         var index = knobIndex ?? (Channels.Count == 0 ? 0 : Channels.Max(c => c.KnobIndex) + 1);
-        Channels.Add(new ChannelViewModel(index, appName, _audioManager, AvailableSessions, RemoveChannelInternal, SaveChannels, HideSession));
+        Channels.Add(new ChannelViewModel(index, appName, _audioManager, AvailableSessions, Channels, RemoveChannelInternal, SaveChannels, HideSession));
 
         if (save)
             SaveChannels();
@@ -112,13 +117,36 @@ public partial class MainViewModel : ObservableObject
         SettingsService.Save(_settings);
     }
 
-    private void HideSession(AudioSession session)
+    public string? HideSession(AudioSession session)
     {
+        var assigned = ChannelViewModel.FindAssignedChannel(Channels, session.ProcessName);
+        if (assigned is not null)
+            return $"Can't hide '{session.ProcessName}' — it's assigned to {assigned.KnobLabel}. Unassign it first.";
+
         if (!_settings.ExcludedProcesses.Contains(session.ProcessName, StringComparer.OrdinalIgnoreCase))
             _settings.ExcludedProcesses.Add(session.ProcessName);
 
+        if (!HiddenProcesses.Contains(session.ProcessName, StringComparer.OrdinalIgnoreCase))
+            HiddenProcesses.Add(session.ProcessName);
+
         AvailableSessions.Remove(session);
         SettingsService.Save(_settings);
+        return null;
+    }
+
+    [RelayCommand]
+    private void UnhideProcess(string processName)
+    {
+        _settings.ExcludedProcesses.RemoveAll(p => p.Equals(processName, StringComparison.OrdinalIgnoreCase));
+
+        for (var i = HiddenProcesses.Count - 1; i >= 0; i--)
+        {
+            if (HiddenProcesses[i].Equals(processName, StringComparison.OrdinalIgnoreCase))
+                HiddenProcesses.RemoveAt(i);
+        }
+
+        SettingsService.Save(_settings);
+        RefreshAvailableSessions();
     }
 
     private void RefreshAvailableSessions()
