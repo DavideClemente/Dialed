@@ -29,25 +29,10 @@ public sealed partial class KnobCard : UserControl
         if (Channel is null)
             return;
 
-        var listView = new ListView
-        {
-            ItemsSource = Channel.AvailableSessions,
-            DisplayMemberPath = nameof(AudioSession.ProcessName),
-            SelectionMode = ListViewSelectionMode.Single
-        };
-
-        var dialog = new ContentDialog
-        {
-            Title = "Select App",
-            Content = listView,
-            PrimaryButtonText = "Select",
-            SecondaryButtonText = "Remove Channel",
-            CloseButtonText = "Cancel",
-            XamlRoot = XamlRoot
-        };
-
+        var dialog = new AppPickerDialog(Channel) { XamlRoot = XamlRoot };
         var result = await dialog.ShowAsync();
-        if (result == ContentDialogResult.Primary && listView.SelectedItem is AudioSession session)
+
+        if (result == ContentDialogResult.Primary && dialog.SelectedSession is AudioSession session)
         {
             Channel.AppName = session.ProcessName;
         }

@@ -10,6 +10,7 @@ public partial class ChannelViewModel : ObservableObject
     private readonly AudioManager _audioManager;
     private readonly Action<ChannelViewModel> _onRemove;
     private readonly Action _onSettingsChanged;
+    private readonly Action<AudioSession> _onHideSession;
 
     public int KnobIndex { get; }
 
@@ -29,13 +30,15 @@ public partial class ChannelViewModel : ObservableObject
         AudioManager audioManager,
         ObservableCollection<AudioSession> availableSessions,
         Action<ChannelViewModel> onRemove,
-        Action onSettingsChanged)
+        Action onSettingsChanged,
+        Action<AudioSession> onHideSession)
     {
         KnobIndex = knobIndex;
         _audioManager = audioManager;
         AvailableSessions = availableSessions;
         _onRemove = onRemove;
         _onSettingsChanged = onSettingsChanged;
+        _onHideSession = onHideSession;
         this.appName = appName;
         volume = audioManager.GetVolume(appName) * 100;
     }
@@ -48,6 +51,8 @@ public partial class ChannelViewModel : ObservableObject
 
     partial void OnVolumeChanged(double value) =>
         _audioManager.SetVolume(AppName, (float)(value / 100.0));
+
+    public void HideSession(AudioSession session) => _onHideSession(session);
 
     public void Remove() => _onRemove(this);
 }

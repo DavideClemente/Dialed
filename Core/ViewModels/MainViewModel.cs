@@ -87,7 +87,7 @@ public partial class MainViewModel : ObservableObject
     private void AddChannelInternal(string appName, int? knobIndex = null, bool save = true)
     {
         var index = knobIndex ?? (Channels.Count == 0 ? 0 : Channels.Max(c => c.KnobIndex) + 1);
-        Channels.Add(new ChannelViewModel(index, appName, _audioManager, AvailableSessions, RemoveChannelInternal, SaveChannels));
+        Channels.Add(new ChannelViewModel(index, appName, _audioManager, AvailableSessions, RemoveChannelInternal, SaveChannels, HideSession));
 
         if (save)
             SaveChannels();
@@ -108,9 +108,20 @@ public partial class MainViewModel : ObservableObject
         SettingsService.Save(_settings);
     }
 
+    private void HideSession(AudioSession session)
+    {
+        if (!_settings.ExcludedProcesses.Contains(session.ProcessName, StringComparer.OrdinalIgnoreCase))
+            _settings.ExcludedProcesses.Add(session.ProcessName);
+
+        AvailableSessions.Remove(session);
+        SettingsService.Save(_settings);
+    }
+
     private void RefreshAvailableSessions()
     {
-        var current = _audioManager.GetSessions();
+        var current = _audioManager.GetSessions()
+            .Where(s => !_settings.ExcludedProcesses.Contains(s.ProcessName, StringComparer.OrdinalIgnoreCase))
+            .ToList();
 
         for (var i = AvailableSessions.Count - 1; i >= 0; i--)
         {

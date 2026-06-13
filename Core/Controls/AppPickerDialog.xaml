@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="AudioMixerWin.Core.Controls.AppPickerDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:models="using:AudioMixerWin.Core.Models"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="Select App"
+    PrimaryButtonText="Select"
+    SecondaryButtonText="Remove Channel"
+    CloseButtonText="Cancel">
+
+    <ListView x:Name="SessionsList" ItemsSource="{x:Bind AvailableSessions}" SelectionMode="Single">
+        <ListView.ItemTemplate>
+            <DataTemplate x:DataType="models:AudioSession">
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{x:Bind ProcessName}" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Content="Hide" Tag="{x:Bind}" Click="OnHideClick" />
+                </Grid>
+            </DataTemplate>
+        </ListView.ItemTemplate>
+    </ListView>
+</ContentDialog>
