@@ -3,40 +3,76 @@
     x:Class="AudioMixerWin.Core.Views.SettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:models="using:AudioMixerWin.Core.Models"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <StackPanel Padding="24" Spacing="8" MaxWidth="400" HorizontalAlignment="Left">
+    <ScrollViewer>
+        <StackPanel Padding="24" Spacing="8" MaxWidth="400" HorizontalAlignment="Left">
 
-        <TextBlock Text="Serial Connection" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,8" />
+            <TextBlock Text="Serial Connection" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,8" />
 
-        <TextBlock Text="COM Port" />
-        <ComboBox
-            IsEditable="True"
-            ItemsSource="{x:Bind PortNames}"
-            Text="{x:Bind ViewModel.ComPort, Mode=TwoWay}"
-            HorizontalAlignment="Stretch" />
+            <TextBlock Text="COM Port" />
+            <ComboBox
+                IsEditable="True"
+                ItemsSource="{x:Bind PortNames}"
+                Text="{x:Bind ViewModel.ComPort, Mode=TwoWay}"
+                HorizontalAlignment="Stretch" />
 
-        <TextBlock Text="Baud Rate" Margin="0,12,0,0" />
-        <ComboBox
-            ItemsSource="{x:Bind BaudRates}"
-            SelectedItem="{x:Bind ViewModel.BaudRate, Mode=TwoWay}"
-            HorizontalAlignment="Stretch" />
+            <TextBlock Text="Baud Rate" Margin="0,12,0,0" />
+            <ComboBox
+                ItemsSource="{x:Bind BaudRates}"
+                SelectedItem="{x:Bind ViewModel.BaudRate, Mode=TwoWay}"
+                HorizontalAlignment="Stretch" />
 
-        <Button Content="Reconnect" Command="{x:Bind ViewModel.ReconnectCommand}" Margin="0,16,0,0" />
+            <Button Content="Reconnect" Command="{x:Bind ViewModel.ReconnectCommand}" Margin="0,16,0,0" />
 
-        <TextBlock Text="{x:Bind ViewModel.SerialStatus, Mode=OneWay}" Opacity="0.7" Margin="0,8,0,0" />
+            <TextBlock Text="{x:Bind ViewModel.SerialStatus, Mode=OneWay}" Opacity="0.7" Margin="0,8,0,0" />
 
-        <TextBlock Text="Audio Sessions" FontSize="20" FontWeight="SemiBold" Margin="0,24,0,8" />
+            <TextBlock Text="Audio Sessions" FontSize="20" FontWeight="SemiBold" Margin="0,24,0,8" />
 
-        <TextBlock Text="Refresh Interval (seconds)" />
-        <NumberBox
-            Value="{x:Bind ViewModel.RefreshIntervalSeconds, Mode=TwoWay}"
-            Minimum="1"
-            Maximum="30"
-            SpinButtonPlacementMode="Inline"
-            HorizontalAlignment="Stretch" />
+            <TextBlock Text="Refresh Interval (seconds)" />
+            <NumberBox
+                Value="{x:Bind ViewModel.RefreshIntervalSeconds, Mode=TwoWay}"
+                Minimum="1"
+                Maximum="30"
+                SpinButtonPlacementMode="Inline"
+                HorizontalAlignment="Stretch" />
 
-    </StackPanel>
+            <TextBlock Text="Visible (tap Hide to exclude from app pickers)" Opacity="0.7" Margin="0,16,0,0" />
+            <InfoBar x:Name="HideInfoBar" Severity="Warning" IsOpen="False" IsClosable="True" />
+            <ListView ItemsSource="{x:Bind ViewModel.AvailableSessions}" MaxHeight="200">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="models:AudioSession">
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{x:Bind ProcessName}" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Content="Hide" Tag="{x:Bind}" Click="OnHideClick" />
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <TextBlock Text="Hidden (tap Show to restore)" Opacity="0.7" Margin="0,12,0,0" />
+            <ListView ItemsSource="{x:Bind ViewModel.HiddenProcesses}" MaxHeight="200">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{x:Bind}" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Content="Show" Tag="{x:Bind}" Click="OnShowClick" />
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+        </StackPanel>
+    </ScrollViewer>
 </Page>
