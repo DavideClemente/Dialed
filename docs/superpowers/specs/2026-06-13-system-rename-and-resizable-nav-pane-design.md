@@ -1,4 +1,4 @@
-# System Channel Rename & Resizable Navigation Pane — Design
+# Channel Display Polish & Resizable Navigation Pane — Design
 
 **Date:** 2026-06-13
 **Status:** Approved by user, pending implementation plan
@@ -14,6 +14,14 @@
 2. Make the `NavigationView` pane in `MainWindow.xaml` (the "Mixer"/"Settings"
    sidebar) horizontally resizable by dragging its right edge, within a 200–400px
    range, with the chosen width persisted across restarts.
+3. Every displayed source name gets its first letter capitalized (e.g. "spotify" →
+   "Spotify"), via the same display-name path as Goal 1.
+4. A channel's icon must not disappear when its assigned app closes — keep showing
+   the last-known icon until the app (re)appears with a possibly-updated one.
+5. When a channel's assigned app is closed, the slider may be moved without effect
+   (no live session to apply it to). When the app relaunches, re-read its actual
+   volume from the new session and update the slider to match, overwriting whatever
+   it showed while the app was closed.
 
 ## Current State (recap)
 
@@ -36,8 +44,15 @@
   `RefreshIntervalSeconds`, `Channels`, `ExcludedProcesses` via `SettingsService`.
   `MainViewModel` mirrors several of these as `[ObservableProperty]`s with
   `On...Changed` partial methods that save back to `AppSettings`.
+- `ChannelViewModel.UpdateIconSource()` sets `IconSource` to
+  `AvailableSessions.FirstOrDefault(...)?.IconSource` — when the assigned app's
+  session disappears (app closed), this resolves to `null` and the card's icon
+  vanishes. `Volume` is only set from `AudioManager.GetVolume` in the constructor
+  and in `OnAppNameChanged`; it is never re-read after the app's session
+  reappears, so edits made to the slider while the app was closed are never
+  reconciled against the relaunched app's actual volume.
 
-## Section 1 — "🔊 System" display name
+## Section 1 — Display name normalization ("🔊 System" + PascalCase)
 
 ### `AudioManager.cs` (global namespace, no `namespace` declaration)
 
@@ -46,11 +61,20 @@ Add a static helper next to `MasterVolumeProcessName`:
 ```csharp
 public const string MasterVolumeProcessName = "System Volume";
 
-public static string GetDisplayName(string processName) =>
-    processName.Equals(MasterVolumeProcessName, StringComparison.OrdinalIgnoreCase)
-        ? "🔊 System"
+public static string GetDisplayName(string processName)
+{
+    if (processName.Equals(MasterVolumeProcessName, StringComparison.OrdinalIgnoreCase))
+        return "🔊 System";
+
+    return processName.Length > 0
+        ? char.ToUpperInvariant(processName[0]) + processName[1..]
         : processName;
+}
 ```
+
+The PascalCase rule is intentionally simple — capitalize the first character only,
+leave the rest unchanged (`spotify` → `Spotify`, `msedge` → `Msedge`, `Discord` →
+`Discord`). No name dictionary.
 
 In `GetSessions()`, change both places that set `DisplayName`:
 
@@ -277,6 +301,61 @@ No custom resize cursor — `Border` doesn't expose `ProtectedCursor` to
 `MainWindow`'s code-behind without a custom control subclass, and the hover
 highlight is sufficient affordance for this small change.
 
+## Section 3 — Icon persistence & volume re-sync on session changes
+
+### `ChannelViewModel.cs`
+
+Replace `UpdateIconSource()` with a helper used both at construction time and on
+reassignment, and rewrite the `AvailableSessions.CollectionChanged` handler to
+also re-sync `Volume`:
+
+```csharp
+private ImageSource? GetSessionIcon(string appName) =>
+    AvailableSessions.FirstOrDefault(s => s.ProcessName.Equals(appName, StringComparison.OrdinalIgnoreCase))?.IconSource;
+```
+
+Constructor — replace the trailing `UpdateIconSource();` call:
+
+```csharp
+AvailableSessions.CollectionChanged += OnAvailableSessionsChanged;
+IconSource = GetSessionIcon(appName);
+```
+
+```csharp
+partial void OnAppNameChanged(string value)
+{
+    Volume = _audioManager.GetVolume(value) * 100;
+    IconSource = GetSessionIcon(value);
+    _onSettingsChanged();
+}
+
+private void OnAvailableSessionsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+{
+    var session = AvailableSessions.FirstOrDefault(s => s.ProcessName.Equals(AppName, StringComparison.OrdinalIgnoreCase));
+    if (session is null)
+        return; // app not running — keep last-known icon and volume
+
+    IconSource = session.IconSource;
+    Volume = _audioManager.GetVolume(AppName) * 100;
+}
+```
+
+The old `UpdateIconSource` method is removed entirely.
+
+- **App closes**: `AvailableSessions` no longer contains it →
+  `OnAvailableSessionsChanged` finds no match → early return → `IconSource` and
+  `Volume` retain their last values (fixes the disappearing icon; the slider stays
+  wherever the user left it, "saved" per the channel's persisted `AppName`).
+- **App relaunches**: a new session appears → `OnAvailableSessionsChanged` finds it
+  → `IconSource` refreshed (in case the icon changed) and `Volume` re-read from
+  `AudioManager.GetVolume`, overwriting any value the slider showed while the app
+  was closed — keeping the UI in sync with the relaunched app's actual volume.
+  Setting `Volume` triggers `OnVolumeChanged` → `SetVolume(AppName, ...)`, which
+  re-applies the same value back to the session (idempotent no-op).
+- **Reassigned to a different app** (`OnAppNameChanged`, via the App Picker):
+  `IconSource` and `Volume` are recomputed fresh for the new `AppName` — no stale
+  icon/volume carried over from the previous assignment.
+
 ## Edge Cases
 
 - **Pane in compact/collapsed mode** (`NavigationView` toggled to icon-only via the
@@ -291,6 +370,18 @@ highlight is sufficient affordance for this small change.
 - **`HiddenProcesses` containing `"System Volume"`**: if a user ever hides the
   master-volume entry, the Hidden list shows "🔊 System" via the new converter,
   consistent with everywhere else it's displayed.
+- **`GetDisplayName` on an empty string**: returns it unchanged (guarded by the
+  `processName.Length > 0` check) — not expected in practice, but avoids an
+  `IndexOutOfRangeException`.
+- **Channel assigned to an app that's never been running**: `GetSessionIcon`
+  returns `null` (no match) and `GetVolume` returns `0` — same as today's
+  first-run behavior, unchanged.
+- **System-volume channel and `OnAvailableSessionsChanged`**: the synthetic
+  "🔊 System" entry is present in `AvailableSessions` whenever the periodic
+  refresh runs (it's unconditionally appended in `GetSessions()`), so a channel
+  assigned to it always finds a match and its `Volume`/`IconSource` (`null` icon)
+  are continuously re-synced from `GetMasterVolume()` — consistent with the
+  "snap to actual volume" rule for ordinary apps.
 
 ## Verification (manual)
 
@@ -299,9 +390,19 @@ No test project exists (per `CLAUDE.md`).
 1. `dotnet build AudioMixerWin.csproj -p:Platform=x64 -c Debug` succeeds.
 2. Assign a channel to the system volume entry — its card title reads "🔊 System"
    (not "System Volume"), and its slider still controls the OS master volume.
-3. Open that channel's app picker — the system entry is listed as "🔊 System".
+3. Open that channel's app picker — the system entry is listed as "🔊 System", and
+   ordinary apps are shown with a capitalized first letter (e.g. "Spotify").
 4. Settings → "Manage Sources" — the system entry shows "🔊 System" in the Visible
-   list (or Hidden list, if hidden).
+   list (or Hidden list, if hidden); other entries show capitalized names.
 5. Drag the nav-pane splitter left/right — the "Mixer"/"Settings" pane resizes
    live, clamped to 200–400px.
 6. Restart the app — the pane reopens at the last dragged width.
+7. Assign a channel to a running app — icon appears. Close that app — icon
+   remains, slider stays where it was. Reopen the app — icon refreshes and the
+   slider snaps to the relaunched app's actual volume.
+8. While the app from step 7 is closed, move its channel's slider — no crash, no
+   effect on any live session. Reopen the app — slider snaps to the app's actual
+   volume (overwriting the value set while closed).
+9. Reassign a channel (App Picker) from an app with an icon to a different,
+   not-currently-running app — the old icon disappears (no stale carry-over) and
+   the slider resets to `0%` until the new app is detected running.
