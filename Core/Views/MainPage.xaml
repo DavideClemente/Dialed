@@ -10,19 +10,8 @@
     mc:Ignorable="d">
 
     <Grid Padding="24">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
 
-        <Button
-            Grid.Row="0"
-            Content="Add Channel"
-            Command="{x:Bind ViewModel.AddChannelCommand}"
-            HorizontalAlignment="Left"
-            Margin="0,0,0,12" />
-
-        <ScrollViewer Grid.Row="1">
+        <ScrollViewer>
             <ItemsRepeater ItemsSource="{x:Bind ViewModel.Channels}">
                 <ItemsRepeater.Layout>
                     <UniformGridLayout MinItemWidth="260" MinItemHeight="200" ItemsStretch="Fill" />
@@ -34,5 +23,17 @@
                 </ItemsRepeater.ItemTemplate>
             </ItemsRepeater>
         </ScrollViewer>
+
+        <Button
+            Command="{x:Bind ViewModel.AddChannelCommand}"
+            Content="+"
+            FontSize="24"
+            Width="56"
+            Height="56"
+            CornerRadius="28"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Margin="0,0,24,24" />
+
     </Grid>
 </Page>
