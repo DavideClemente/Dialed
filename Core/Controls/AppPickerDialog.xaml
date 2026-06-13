@@ -23,7 +23,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="{x:Bind ProcessName}" VerticalAlignment="Center" />
+                        <TextBlock Text="{x:Bind DisplayName}" VerticalAlignment="Center" />
                         <Button Grid.Column="1" Content="Hide" Tag="{x:Bind}" Click="OnHideClick" />
                     </Grid>
                 </DataTemplate>

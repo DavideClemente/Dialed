@@ -24,6 +24,7 @@ public partial class ChannelViewModel : ObservableObject
     public ObservableCollection<AudioSession> AvailableSessions { get; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayName))]
     private string appName;
 
     [ObservableProperty]
@@ -31,6 +32,8 @@ public partial class ChannelViewModel : ObservableObject
 
     [ObservableProperty]
     private ImageSource? iconSource;
+
+    public string DisplayName => AudioManager.GetDisplayName(AppName);
 
     public ChannelViewModel(
         int knobIndex,

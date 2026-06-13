@@ -16,6 +16,16 @@ public class AudioManager
     {
         public const string MasterVolumeProcessName = "System Volume";
 
+        public static string GetDisplayName(string processName)
+        {
+            if (processName.Equals(MasterVolumeProcessName, StringComparison.OrdinalIgnoreCase))
+                return "🔊 System";
+
+            return processName.Length > 0
+                ? char.ToUpperInvariant(processName[0]) + processName[1..]
+                : processName;
+        }
+
         private readonly MMDevice _device;
         private readonly Dictionary<string, ImageSource?> _iconCache = new(StringComparer.OrdinalIgnoreCase);
 
@@ -46,7 +56,7 @@ public class AudioManager
                     result.Add(new AudioSession
                     {
                         ProcessName = process.ProcessName,
-                        DisplayName = process.ProcessName,
+                        DisplayName = GetDisplayName(process.ProcessName),
                         Volume = session.SimpleAudioVolume.Volume,
                         IconSource = GetIconForProcess(process),
                     });
@@ -64,7 +74,7 @@ public class AudioManager
             result.Add(new AudioSession
             {
                 ProcessName = MasterVolumeProcessName,
-                DisplayName = MasterVolumeProcessName,
+                DisplayName = GetDisplayName(MasterVolumeProcessName),
                 Volume = GetMasterVolume(),
             });
 

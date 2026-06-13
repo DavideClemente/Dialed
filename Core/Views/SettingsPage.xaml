@@ -4,9 +4,14 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:models="using:AudioMixerWin.Core.Models"
+    xmlns:converters="using:AudioMixerWin.Core.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
+
+    <Page.Resources>
+        <converters:ProcessNameDisplayConverter x:Key="ProcessNameDisplay" />
+    </Page.Resources>
 
     <ScrollViewer>
         <StackPanel Padding="24" Spacing="8" MaxWidth="400" HorizontalAlignment="Left">
@@ -49,7 +54,7 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="{x:Bind ProcessName}" VerticalAlignment="Center" />
+                            <TextBlock Text="{x:Bind DisplayName}" VerticalAlignment="Center" />
                             <Button Grid.Column="1" Content="Hide" Tag="{x:Bind}" Click="OnHideClick" />
                         </Grid>
                     </DataTemplate>
@@ -65,7 +70,7 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="{x:Bind}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Converter={StaticResource ProcessNameDisplay}}" VerticalAlignment="Center" />
                             <Button Grid.Column="1" Content="Show" Tag="{x:Bind}" Click="OnShowClick" />
                         </Grid>
                     </DataTemplate>

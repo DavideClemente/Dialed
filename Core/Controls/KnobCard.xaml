@@ -26,7 +26,7 @@
                         Height="32"/>
 
                     <TextBlock
-                        Text="{x:Bind Channel.AppName, Mode=OneWay}"
+                        Text="{x:Bind Channel.DisplayName, Mode=OneWay}"
                         FontSize="28"
                         FontWeight="SemiBold"
                         VerticalAlignment="Center"/>
