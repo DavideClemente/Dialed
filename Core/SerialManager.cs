@@ -1,19 +1,23 @@
 using System;
 using System.Globalization;
 using System.IO.Ports;
+using AudioMixerWin.Core.Models;
 
 namespace AudioMixerWin.Core;
 
 public class SerialManager
 {
     private readonly SerialPort _port;
+    private readonly InputMode _inputMode;
 
     public event Action<int, float>? KnobChanged;
+    public event Action<int, int>? KnobDelta;
 
-    public SerialManager(string comPort, int baudRate)
+    public SerialManager(string comPort, int baudRate, InputMode inputMode = InputMode.Potentiometer)
     {
         _port = new SerialPort(comPort, baudRate);
         _port.DataReceived += OnData;
+        _inputMode = inputMode;
     }
 
     public void Start()
@@ -38,7 +42,6 @@ public class SerialManager
         try
         {
             var line = _port.ReadLine().Trim();
-
             HandleCommand(line);
         }
         catch { }
@@ -53,9 +56,15 @@ public class SerialManager
         if (!int.TryParse(parts[0], out var knobIndex))
             return;
 
-        if (!float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
-            return;
-
-        KnobChanged?.Invoke(knobIndex, Math.Clamp(value, 0f, 1f));
+        if (_inputMode == InputMode.RotaryEncoder)
+        {
+            if (int.TryParse(parts[1], out var delta))
+                KnobDelta?.Invoke(knobIndex, delta);
+        }
+        else
+        {
+            if (float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
+                KnobChanged?.Invoke(knobIndex, Math.Clamp(value, 0f, 1f));
+        }
     }
 }
