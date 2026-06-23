@@ -33,6 +33,12 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private double navPaneWidth;
 
+    [ObservableProperty]
+    private InputMode inputMode;
+
+    [ObservableProperty]
+    private double encoderStepPercent;
+
     public ObservableCollection<ChannelViewModel> Channels { get; } = new();
 
     public ObservableCollection<AudioSession> AvailableSessions { get; } = new();
@@ -49,6 +55,8 @@ public partial class MainViewModel : ObservableObject
         baudRate = _settings.BaudRate;
         refreshIntervalSeconds = _settings.RefreshIntervalSeconds;
         navPaneWidth = _settings.NavPaneWidth;
+        inputMode = _settings.InputMode;
+        encoderStepPercent = _settings.EncoderStepPercent;
 
         foreach (var process in _settings.ExcludedProcesses)
             HiddenProcesses.Add(process);
@@ -67,8 +75,9 @@ public partial class MainViewModel : ObservableObject
 
     private SerialManager CreateAndStartSerial()
     {
-        var serial = new SerialManager(ComPort, BaudRate);
+        var serial = new SerialManager(ComPort, BaudRate, InputMode);
         serial.KnobChanged += OnKnobChanged;
+        serial.KnobDelta += OnKnobDelta;
 
         try
         {
@@ -185,6 +194,31 @@ public partial class MainViewModel : ObservableObject
         SettingsService.Save(_settings);
     }
 
+    public int InputModeIndex
+    {
+        get => (int)InputMode;
+        set => InputMode = (InputMode)value;
+    }
+
+    public Microsoft.UI.Xaml.Visibility IsRotaryEncoder =>
+        InputMode == InputMode.RotaryEncoder
+            ? Microsoft.UI.Xaml.Visibility.Visible
+            : Microsoft.UI.Xaml.Visibility.Collapsed;
+
+    partial void OnInputModeChanged(InputMode value)
+    {
+        _settings.InputMode = value;
+        SettingsService.Save(_settings);
+        OnPropertyChanged(nameof(InputModeIndex));
+        OnPropertyChanged(nameof(IsRotaryEncoder));
+    }
+
+    partial void OnEncoderStepPercentChanged(double value)
+    {
+        _settings.EncoderStepPercent = (float)value;
+        SettingsService.Save(_settings);
+    }
+
     private void OnKnobChanged(int knobIndex, float normalized)
     {
         _dispatcherQueue.TryEnqueue(() =>
@@ -192,6 +226,16 @@ public partial class MainViewModel : ObservableObject
             var channel = Channels.FirstOrDefault(c => c.KnobIndex == knobIndex);
             if (channel != null)
                 channel.Volume = normalized * 100;
+        });
+    }
+
+    private void OnKnobDelta(int knobIndex, int delta)
+    {
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            var channel = Channels.FirstOrDefault(c => c.KnobIndex == knobIndex);
+            if (channel != null)
+                channel.Volume = Math.Clamp(channel.Volume + delta * EncoderStepPercent, 0, 100);
         });
     }
 }

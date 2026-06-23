@@ -30,6 +30,27 @@
                 SelectedItem="{x:Bind ViewModel.BaudRate, Mode=TwoWay}"
                 HorizontalAlignment="Stretch" />
 
+            <TextBlock Text="Input Type" Margin="0,12,0,0" />
+            <ComboBox
+                x:Name="InputModeCombo"
+                HorizontalAlignment="Stretch"
+                SelectedIndex="{x:Bind ViewModel.InputModeIndex, Mode=TwoWay}">
+                <ComboBoxItem Content="Potentiometer (absolute)" />
+                <ComboBoxItem Content="Rotary Encoder (relative)" />
+            </ComboBox>
+
+            <StackPanel
+                Visibility="{x:Bind ViewModel.IsRotaryEncoder, Mode=OneWay}"
+                Spacing="4" Margin="0,8,0,0">
+                <TextBlock Text="Step per tick (%)" />
+                <NumberBox
+                    Value="{x:Bind ViewModel.EncoderStepPercent, Mode=TwoWay}"
+                    Minimum="0.5"
+                    Maximum="20"
+                    SpinButtonPlacementMode="Inline"
+                    HorizontalAlignment="Stretch" />
+            </StackPanel>
+
             <Button Content="Reconnect" Command="{x:Bind ViewModel.ReconnectCommand}" Margin="0,16,0,0" />
 
             <TextBlock Text="{x:Bind ViewModel.SerialStatus, Mode=OneWay}" Opacity="0.7" Margin="0,8,0,0" />

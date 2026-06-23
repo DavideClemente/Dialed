@@ -9,6 +9,8 @@ public class AppSettings
     public int BaudRate { get; set; } = 115200;
     public int RefreshIntervalSeconds { get; set; } = 2;
     public double NavPaneWidth { get; set; } = 320;
+    public InputMode InputMode { get; set; } = InputMode.Potentiometer;
+    public float EncoderStepPercent { get; set; } = 2f;
     public List<ChannelConfig> Channels { get; set; } = new();
     public List<string> ExcludedProcesses { get; set; } = new();
 }
