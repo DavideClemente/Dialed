@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Windows.UI;
 
+
 namespace AudioMixerWin.Core.Controls;
 
 public sealed partial class KnobCard : UserControl
@@ -23,6 +24,12 @@ public sealed partial class KnobCard : UserControl
     {
         InitializeComponent();
     }
+
+    public Visibility ConvertIconToVisibility(ImageSource? icon) =>
+        icon is not null ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility ConvertIconFallbackToVisibility(ImageSource? icon) =>
+        icon is null ? Visibility.Visible : Visibility.Collapsed;
 
     public string FormatPercent(double volume) => $"{volume:0}%";
 

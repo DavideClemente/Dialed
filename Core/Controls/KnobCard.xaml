@@ -41,9 +41,17 @@
                             <Border.BorderBrush>
                                 <SolidColorBrush Color="#2A2A2A"/>
                             </Border.BorderBrush>
-                            <Image Source="{x:Bind Channel.IconSource, Mode=OneWay}"
-                                   Width="24" Height="24"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Grid>
+                                <FontIcon Glyph="&#xE767;"
+                                          FontSize="20"
+                                          Foreground="#505050"
+                                          Visibility="{x:Bind ConvertIconFallbackToVisibility(Channel.IconSource), Mode=OneWay}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Image Source="{x:Bind Channel.IconSource, Mode=OneWay}"
+                                       Width="24" Height="24"
+                                       Visibility="{x:Bind ConvertIconToVisibility(Channel.IconSource), Mode=OneWay}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
                         </Border>
 
                         <!-- Name + knob label badge -->

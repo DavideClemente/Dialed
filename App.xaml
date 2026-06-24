@@ -22,6 +22,11 @@
             <!-- NavigationView selection indicator -->
             <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="#D0D0D0"/>
 
+            <!-- NavigationView pane background -->
+            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#111111"/>
+            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="#0A0A0A"/>
+            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#111111"/>
+
         </ResourceDictionary>
     </Application.Resources>
 </Application>

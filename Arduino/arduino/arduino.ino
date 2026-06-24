@@ -1,5 +1,5 @@
 // Set to 1 to use rotary encoders, 0 to use potentiometers
-#define USE_ENCODER 1
+#define USE_ENCODER 0
 
 // -----------------------------------------------------------------------
 // Knob definitions — add or remove structs here to match your hardware.
@@ -107,25 +107,30 @@ void loop() {
 
 PotConfig pots[] = {
   { "knob1", 15 },
-  // { "knob2", 14 },
+  { "knob2", 35 },
 };
 const int NUM_POTS = sizeof(pots) / sizeof(pots[0]);
 
 float smoothed[sizeof(pots) / sizeof(pots[0])] = {};
+float lastSent[sizeof(pots) / sizeof(pots[0])];
 
 void setup() {
   Serial.begin(115200);
+  for (int i = 0; i < NUM_POTS; i++) lastSent[i] = -1.0;
 }
 
 void loop() {
   for (int i = 0; i < NUM_POTS; i++) {
-    int raw    = analogRead(pots[i].pin);
-    float value = raw / 4095.0;
-    smoothed[i] = smoothed[i] * 0.85 + value * 0.15;
+    int raw   = analogRead(pots[i].pin);
+    float val = raw / 4095.0;
+    smoothed[i] = smoothed[i] * 0.85 + val * 0.15;
 
-    Serial.print(pots[i].id);
-    Serial.print(":");
-    Serial.println(smoothed[i], 2);
+    if (abs(smoothed[i] - lastSent[i]) >= 0.01) {
+      Serial.print(pots[i].id);
+      Serial.print(":");
+      Serial.println(smoothed[i], 2);
+      lastSent[i] = smoothed[i];
+    }
   }
   delay(50);
 }
