@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 using AudioMixerWin.Core.Models;
 using AudioMixerWin.Core.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -83,7 +84,11 @@ public partial class MainViewModel : ObservableObject
             AddChannelInternal(config.AppName, config.KnobIndex, save: false);
 
         _serial = CreateAndStartSerial();
-        SyncAllChannels();
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(2000);
+            _dispatcherQueue.TryEnqueue(SyncAllChannels);
+        });
 
         RefreshAvailableSessions();
 
@@ -120,7 +125,11 @@ public partial class MainViewModel : ObservableObject
         _serial.KnobPressed -= OnKnobPressed;
         _serial.Stop();
         _serial = CreateAndStartSerial();
-        SyncAllChannels();
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(2000);
+            _dispatcherQueue.TryEnqueue(SyncAllChannels);
+        });
 
         _settings.ComPort = ComPort;
         _settings.BaudRate = BaudRate;
