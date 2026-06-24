@@ -14,7 +14,7 @@
     </Page.Resources>
 
     <ScrollViewer>
-        <StackPanel Padding="24" Spacing="8" MaxWidth="400" HorizontalAlignment="Left">
+        <StackPanel Padding="24" Spacing="8" MaxWidth="600" HorizontalAlignment="Left">
 
             <TextBlock Text="Serial Connection" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,8" />
 
@@ -54,6 +54,26 @@
             <Button Content="Reconnect" Command="{x:Bind ViewModel.ReconnectCommand}" Margin="0,16,0,0" />
 
             <TextBlock Text="{x:Bind ViewModel.SerialStatus, Mode=OneWay}" Opacity="0.7" Margin="0,8,0,0" />
+
+            <ToggleSwitch
+                Header="Debug serial events"
+                IsOn="{x:Bind ViewModel.DebugSerialEvents, Mode=TwoWay}"
+                Margin="0,16,0,0" />
+
+            <ListView
+                Visibility="{x:Bind ViewModel.DebugSerialEvents, Mode=OneWay}"
+                ItemsSource="{x:Bind ViewModel.SerialLog}"
+                MaxHeight="200"
+                IsHitTestVisible="False"
+                FontFamily="Consolas"
+                FontSize="12">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Padding" Value="0,1" />
+                        <Setter Property="MinHeight" Value="0" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+            </ListView>
 
             <TextBlock Text="Audio Sessions" FontSize="20" FontWeight="SemiBold" Margin="0,24,0,8" />
 

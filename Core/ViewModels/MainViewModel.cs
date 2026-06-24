@@ -39,6 +39,11 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private double encoderStepPercent;
 
+    [ObservableProperty]
+    private bool debugSerialEvents;
+
+    public ObservableCollection<string> SerialLog { get; } = new();
+
     public ObservableCollection<ChannelViewModel> Channels { get; } = new();
 
     public ObservableCollection<AudioSession> AvailableSessions { get; } = new();
@@ -57,6 +62,7 @@ public partial class MainViewModel : ObservableObject
         navPaneWidth = _settings.NavPaneWidth;
         inputMode = _settings.InputMode;
         encoderStepPercent = _settings.EncoderStepPercent;
+        debugSerialEvents = _settings.DebugSerialEvents;
 
         foreach (var process in _settings.ExcludedProcesses)
             HiddenProcesses.Add(process);
@@ -75,7 +81,7 @@ public partial class MainViewModel : ObservableObject
 
     private SerialManager CreateAndStartSerial()
     {
-        var serial = new SerialManager(ComPort, BaudRate, InputMode);
+        var serial = new SerialManager(ComPort, BaudRate);
         serial.KnobChanged += OnKnobChanged;
         serial.KnobDelta += OnKnobDelta;
 
@@ -219,23 +225,69 @@ public partial class MainViewModel : ObservableObject
         SettingsService.Save(_settings);
     }
 
-    private void OnKnobChanged(int knobIndex, float normalized)
+    partial void OnDebugSerialEventsChanged(bool value)
     {
+        _settings.DebugSerialEvents = value;
+        SettingsService.Save(_settings);
+        if (!value) SerialLog.Clear();
+    }
+
+    private void LogSerial(string message)
+    {
+        if (!DebugSerialEvents) return;
         _dispatcherQueue.TryEnqueue(() =>
         {
-            var channel = Channels.FirstOrDefault(c => c.KnobIndex == knobIndex);
+            SerialLog.Insert(0, $"[{DateTime.Now:HH:mm:ss.fff}] {message}");
+            while (SerialLog.Count > 50)
+                SerialLog.RemoveAt(SerialLog.Count - 1);
+        });
+    }
+
+    // Arduino sends 1-based IDs like "knob1", "knob2"; channels are stored 0-based.
+    private static int? ParseKnobIndex(string knobId)
+    {
+        var digits = new string(knobId.SkipWhile(c => !char.IsDigit(c)).ToArray());
+        return int.TryParse(digits, out var n) ? n - 1 : null;
+    }
+
+    private void OnKnobChanged(string knobId, float normalized)
+    {
+        if (ParseKnobIndex(knobId) is not int index)
+        {
+            LogSerial($"{knobId} → {normalized:P0} [no index parsed]");
+            return;
+        }
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            var channel = Channels.FirstOrDefault(c => c.KnobIndex == index);
+            LogSerial(channel != null
+                ? $"{knobId} → {normalized:P0} (index={index}, app={channel.AppName})"
+                : $"{knobId} → {normalized:P0} [no channel at index {index}, channels={string.Join(",", Channels.Select(c => c.KnobIndex))}]");
             if (channel != null)
                 channel.Volume = normalized * 100;
         });
     }
 
-    private void OnKnobDelta(int knobIndex, int delta)
+    private void OnKnobDelta(string knobId, int delta)
     {
+        if (ParseKnobIndex(knobId) is not int index)
+        {
+            LogSerial($"{knobId} → {(delta > 0 ? "up" : "down")} [no index parsed]");
+            return;
+        }
         _dispatcherQueue.TryEnqueue(() =>
         {
-            var channel = Channels.FirstOrDefault(c => c.KnobIndex == knobIndex);
-            if (channel != null)
-                channel.Volume = Math.Clamp(channel.Volume + delta * EncoderStepPercent, 0, 100);
+            var channel = Channels.FirstOrDefault(c => c.KnobIndex == index);
+            if (channel == null)
+            {
+                LogSerial($"{knobId} → {(delta > 0 ? "up" : "down")} [no channel at index {index}, channels={string.Join(",", Channels.Select(c => c.KnobIndex))}]");
+                return;
+            }
+            var before = channel.Volume;
+            var next = Math.Clamp(before + delta * EncoderStepPercent, 0, 100);
+            channel.Volume = next;
+            var actual = _audioManager.GetVolume(channel.AppName) * 100;
+            LogSerial($"{knobId} → {(delta > 0 ? "up" : "down")} | {before:F0}% → {next:F0}% (audio={actual:F0}%)");
         });
     }
 }

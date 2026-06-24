@@ -31,7 +31,10 @@ namespace AudioMixerWin
             var hwnd = WindowNative.GetWindowHandle(this);
             var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(
                 Win32Interop.GetWindowIdFromWindow(hwnd));
-            appWindow.SetIcon("Assets\\AudioMixer.ico");
+            var iconPath = System.IO.Path.Combine(
+                System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly()!.Location)!,
+                "Assets", "AudioMixer.ico");
+            appWindow.SetIcon(iconPath);
 
             _mainPage = new MainPage(ViewModel);
             _settingsPage = new SettingsPage(ViewModel);
