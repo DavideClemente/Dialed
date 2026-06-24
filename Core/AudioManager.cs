@@ -28,6 +28,7 @@ public class AudioManager
 
         private readonly MMDevice _device;
         private readonly Dictionary<string, ImageSource?> _iconCache = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, byte[]> _iconRgb565Cache = new(StringComparer.OrdinalIgnoreCase);
 
         public AudioManager()
         {
@@ -108,6 +109,77 @@ public class AudioManager
 
             _iconCache[process.ProcessName] = icon;
             return icon;
+        }
+
+        public byte[] GetIconRgb565(string processName)
+        {
+            if (_iconRgb565Cache.TryGetValue(processName, out var cached))
+                return cached;
+
+            byte[] result = Array.Empty<byte>();
+            try
+            {
+                var procs = Process.GetProcessesByName(processName);
+                if (procs.Length > 0)
+                {
+                    var path = procs[0].MainModule?.FileName;
+                    if (path is not null)
+                    {
+                        using var icon = Icon.ExtractAssociatedIcon(path);
+                        if (icon is not null)
+                            result = ConvertIconToRgb565(icon);
+                    }
+                }
+            }
+            catch { }
+
+            _iconRgb565Cache[processName] = result;
+            return result;
+        }
+
+        private static byte[] ConvertIconToRgb565(Icon icon)
+        {
+            const int size = 64;
+            using var bmp = new System.Drawing.Bitmap(size, size, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            using var g = System.Drawing.Graphics.FromImage(bmp);
+            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+            using var srcBmp = icon.ToBitmap();
+            g.DrawImage(srcBmp, 0, 0, size, size);
+
+            var data = bmp.LockBits(
+                new System.Drawing.Rectangle(0, 0, size, size),
+                System.Drawing.Imaging.ImageLockMode.ReadOnly,
+                System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            try
+            {
+                var raw = new byte[data.Stride * size];
+                Marshal.Copy(data.Scan0, raw, 0, raw.Length);
+
+                var rgb565 = new byte[size * size * 2];
+                for (int i = 0; i < size * size; i++)
+                {
+                    int o = i * 4;
+                    // Format32bppArgb in memory: B, G, R, A
+                    byte b = raw[o];
+                    byte grn = raw[o + 1];
+                    byte r = raw[o + 2];
+                    byte a = raw[o + 3];
+                    // Alpha-blend onto black
+                    r = (byte)(r * a / 255);
+                    grn = (byte)(grn * a / 255);
+                    b = (byte)(b * a / 255);
+
+                    ushort px = (ushort)(((r >> 3) << 11) | ((grn >> 2) << 5) | (b >> 3));
+                    rgb565[i * 2]     = (byte)(px & 0xFF);   // LSB first
+                    rgb565[i * 2 + 1] = (byte)(px >> 8);
+                }
+                return rgb565;
+            }
+            finally
+            {
+                bmp.UnlockBits(data);
+            }
         }
 
         private static WriteableBitmap ConvertIconToBitmapImage(Icon icon)
