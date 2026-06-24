@@ -83,6 +83,7 @@ public partial class MainViewModel : ObservableObject
             AddChannelInternal(config.AppName, config.KnobIndex, save: false);
 
         _serial = CreateAndStartSerial();
+        SyncAllChannels();
 
         RefreshAvailableSessions();
 
@@ -119,6 +120,7 @@ public partial class MainViewModel : ObservableObject
         _serial.KnobPressed -= OnKnobPressed;
         _serial.Stop();
         _serial = CreateAndStartSerial();
+        SyncAllChannels();
 
         _settings.ComPort = ComPort;
         _settings.BaudRate = BaudRate;
@@ -131,7 +133,7 @@ public partial class MainViewModel : ObservableObject
     private void AddChannelInternal(string appName, int? knobIndex = null, bool save = true)
     {
         var index = knobIndex ?? (Channels.Count == 0 ? 0 : Channels.Max(c => c.KnobIndex) + 1);
-        Channels.Add(new ChannelViewModel(index, appName, _audioManager, AvailableSessions, Channels, RemoveChannelInternal, SaveChannels, HideSession));
+        Channels.Add(new ChannelViewModel(index, appName, _audioManager, AvailableSessions, Channels, RemoveChannelInternal, SaveChannels, HideSession, SyncChannel));
 
         if (save)
             SaveChannels();
@@ -152,14 +154,27 @@ public partial class MainViewModel : ObservableObject
         SettingsService.Save(_settings);
     }
 
-    internal void ReorderChannels(int fromIndex, int toIndex)
+    private void SyncChannel(ChannelViewModel ch)
+    {
+        var icon = _audioManager.GetIconRgb565(ch.AppName);
+        _serial.SendAssignment(ch.KnobIndex, ch.AppName, icon);
+    }
+
+    private void SyncAllChannels()
+    {
+        foreach (var ch in Channels)
+            SyncChannel(ch);
+    }
+
+    internal void SwapChannels(int fromIndex, int toIndex)
     {
         if (fromIndex < 0 || toIndex < 0 || fromIndex >= Channels.Count || toIndex >= Channels.Count || fromIndex == toIndex)
             return;
 
-        var channel = Channels[fromIndex];
-        Channels.RemoveAt(fromIndex);
-        Channels.Insert(toIndex, channel);
+        // Exchange the two grid squares; every other channel stays put.
+        var from = Channels[fromIndex];
+        Channels[fromIndex] = Channels[toIndex];
+        Channels[toIndex] = from;
         SaveChannels();
     }
 

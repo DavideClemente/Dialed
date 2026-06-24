@@ -17,6 +17,7 @@ public partial class ChannelViewModel : ObservableObject
     private readonly Action<ChannelViewModel> _onRemove;
     private readonly Action _onSettingsChanged;
     private readonly Func<AudioSession, string?> _onHideSession;
+    private readonly Action<ChannelViewModel> _onSyncNeeded;
 
     public int KnobIndex { get; }
 
@@ -47,7 +48,8 @@ public partial class ChannelViewModel : ObservableObject
         ObservableCollection<ChannelViewModel> channels,
         Action<ChannelViewModel> onRemove,
         Action onSettingsChanged,
-        Func<AudioSession, string?> onHideSession)
+        Func<AudioSession, string?> onHideSession,
+        Action<ChannelViewModel> onSyncNeeded)
     {
         KnobIndex = knobIndex;
         _audioManager = audioManager;
@@ -56,6 +58,7 @@ public partial class ChannelViewModel : ObservableObject
         _onRemove = onRemove;
         _onSettingsChanged = onSettingsChanged;
         _onHideSession = onHideSession;
+        _onSyncNeeded = onSyncNeeded;
         this.appName = appName;
         volume = audioManager.GetVolume(appName) * 100;
         isMuted = audioManager.GetMute(appName);
@@ -70,6 +73,7 @@ public partial class ChannelViewModel : ObservableObject
         IsMuted = _audioManager.GetMute(value);
         IconSource = GetSessionIcon(value);
         _onSettingsChanged();
+        _onSyncNeeded(this);
     }
 
     private void OnAvailableSessionsChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -81,6 +85,7 @@ public partial class ChannelViewModel : ObservableObject
         IconSource = session.IconSource;
         Volume = _audioManager.GetVolume(AppName) * 100;
         IsMuted = _audioManager.GetMute(AppName);
+        _onSyncNeeded(this);
     }
 
     private ImageSource? GetSessionIcon(string appName) =>
