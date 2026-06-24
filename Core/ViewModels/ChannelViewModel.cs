@@ -67,6 +67,7 @@ public partial class ChannelViewModel : ObservableObject
     partial void OnAppNameChanged(string value)
     {
         Volume = _audioManager.GetVolume(value) * 100;
+        IsMuted = _audioManager.GetMute(value);
         IconSource = GetSessionIcon(value);
         _onSettingsChanged();
     }
@@ -79,6 +80,7 @@ public partial class ChannelViewModel : ObservableObject
 
         IconSource = session.IconSource;
         Volume = _audioManager.GetVolume(AppName) * 100;
+        IsMuted = _audioManager.GetMute(AppName);
     }
 
     private ImageSource? GetSessionIcon(string appName) =>

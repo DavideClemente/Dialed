@@ -102,6 +102,8 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Reconnect()
     {
+        _serial.KnobChanged -= OnKnobChanged;
+        _serial.KnobDelta -= OnKnobDelta;
         _serial.KnobPressed -= OnKnobPressed;
         _serial.Stop();
         _serial = CreateAndStartSerial();
