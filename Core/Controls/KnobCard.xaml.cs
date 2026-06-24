@@ -3,6 +3,8 @@ using AudioMixerWin.Core.Models;
 using AudioMixerWin.Core.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
+using Windows.UI;
 
 namespace AudioMixerWin.Core.Controls;
 
@@ -26,7 +28,17 @@ public sealed partial class KnobCard : UserControl
 
     public string FormatMuteIcon(bool isMuted) => isMuted ? "🔇" : "🔊";
 
-    public double ConvertMuteToOpacity(bool isMuted) => isMuted ? 0.4 : 1.0;
+    public double ConvertMuteToOpacity(bool isMuted) => isMuted ? 0.35 : 1.0;
+
+    public SolidColorBrush GetMuteBrush(bool isMuted) =>
+        new SolidColorBrush(isMuted
+            ? Color.FromArgb(255, 50, 18, 26)
+            : Color.FromArgb(255, 20, 23, 42));
+
+    public SolidColorBrush GetMuteBorderBrush(bool isMuted) =>
+        new SolidColorBrush(isMuted
+            ? Color.FromArgb(120, 220, 42, 68)
+            : Color.FromArgb(255, 37, 40, 64));
 
     private async void OnSettingsClick(object sender, RoutedEventArgs e)
     {
