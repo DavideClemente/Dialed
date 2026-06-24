@@ -32,13 +32,13 @@ public sealed partial class KnobCard : UserControl
 
     public SolidColorBrush GetMuteBrush(bool isMuted) =>
         new SolidColorBrush(isMuted
-            ? Color.FromArgb(255, 50, 18, 26)
-            : Color.FromArgb(255, 20, 23, 42));
+            ? Color.FromArgb(255, 42, 8, 8)
+            : Color.FromArgb(255, 28, 28, 28));
 
     public SolidColorBrush GetMuteBorderBrush(bool isMuted) =>
         new SolidColorBrush(isMuted
-            ? Color.FromArgb(120, 220, 42, 68)
-            : Color.FromArgb(255, 37, 40, 64));
+            ? Color.FromArgb(140, 200, 32, 32)
+            : Color.FromArgb(255, 48, 48, 48));
 
     private async void OnSettingsClick(object sender, RoutedEventArgs e)
     {
