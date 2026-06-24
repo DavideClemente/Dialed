@@ -84,6 +84,7 @@ public partial class MainViewModel : ObservableObject
         var serial = new SerialManager(ComPort, BaudRate);
         serial.KnobChanged += OnKnobChanged;
         serial.KnobDelta += OnKnobDelta;
+        serial.KnobPressed += OnKnobPressed;
 
         try
         {
@@ -101,6 +102,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Reconnect()
     {
+        _serial.KnobPressed -= OnKnobPressed;
         _serial.Stop();
         _serial = CreateAndStartSerial();
 
@@ -288,6 +290,26 @@ public partial class MainViewModel : ObservableObject
             channel.Volume = next;
             var actual = _audioManager.GetVolume(channel.AppName) * 100;
             LogSerial($"{knobId} → {(delta > 0 ? "up" : "down")} | {before:F0}% → {next:F0}% (audio={actual:F0}%)");
+        });
+    }
+
+    private void OnKnobPressed(string knobId)
+    {
+        if (ParseKnobIndex(knobId) is not int index)
+        {
+            LogSerial($"{knobId} → press [no index parsed]");
+            return;
+        }
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            var channel = Channels.FirstOrDefault(c => c.KnobIndex == index);
+            if (channel == null)
+            {
+                LogSerial($"{knobId} → press [no channel at index {index}]");
+                return;
+            }
+            channel.ToggleMuteCommand.Execute(null);
+            LogSerial($"{knobId} → press | {channel.AppName} muted={channel.IsMuted}");
         });
     }
 }
