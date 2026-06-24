@@ -205,4 +205,53 @@ public class AudioManager
                 }
             }
         }
+
+        public bool GetMute(string processName)
+        {
+            if (processName.Equals(MasterVolumeProcessName, StringComparison.OrdinalIgnoreCase))
+                return _device.AudioEndpointVolume.Mute;
+
+            var sessions = _device.AudioSessionManager.Sessions;
+
+            for (var i = 0; i < sessions.Count; i++)
+            {
+                try
+                {
+                    var session = sessions[i];
+                    var pid = (int)session.GetProcessID;
+                    var process = Process.GetProcessById(pid);
+
+                    if (process.ProcessName.Equals(processName, StringComparison.OrdinalIgnoreCase))
+                        return session.SimpleAudioVolume.Mute;
+                }
+                catch { }
+            }
+
+            return false;
+        }
+
+        public void SetMute(string processName, bool muted)
+        {
+            if (processName.Equals(MasterVolumeProcessName, StringComparison.OrdinalIgnoreCase))
+            {
+                _device.AudioEndpointVolume.Mute = muted;
+                return;
+            }
+
+            var sessions = _device.AudioSessionManager.Sessions;
+
+            for (var i = 0; i < sessions.Count; i++)
+            {
+                try
+                {
+                    var session = sessions[i];
+                    var pid = (int)session.GetProcessID;
+                    var process = Process.GetProcessById(pid);
+
+                    if (process.ProcessName.Equals(processName, StringComparison.OrdinalIgnoreCase))
+                        session.SimpleAudioVolume.Mute = muted;
+                }
+                catch { }
+            }
+        }
     }
