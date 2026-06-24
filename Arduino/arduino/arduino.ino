@@ -15,19 +15,24 @@ struct EncConfig {
   const char* id;
   int clkPin;
   int dtPin;
+  int swPin;
 };
 
 #if USE_ENCODER
 
 EncConfig encoders[] = {
-  { "knob1", 17, 16 },
-  // { "knob2", 19, 18 },
+  { "knob1", 17, 16, 5 },
+  // { "knob2", 19, 18, X },
 };
 const int NUM_ENCODERS = sizeof(encoders) / sizeof(encoders[0]);
 
 // Per-encoder state (mirrors encoders[] by index)
 volatile int  encDelta[sizeof(encoders) / sizeof(encoders[0])] = {};
 volatile uint8_t encState[sizeof(encoders) / sizeof(encoders[0])] = {};
+
+// Button debounce state (mirrors encoders[] by index)
+uint8_t  swLastState[sizeof(encoders) / sizeof(encoders[0])];
+unsigned long swLastDebounce[sizeof(encoders) / sizeof(encoders[0])];
 
 // Quadrature lookup: index = (prevAB << 2) | currAB, value = direction
 // AB = (CLK << 1) | DT
@@ -56,6 +61,9 @@ void setup() {
     // Attach to BOTH pins so every quadrature edge is caught
     attachInterrupt(digitalPinToInterrupt(encoders[i].clkPin), readEncoders, CHANGE);
     attachInterrupt(digitalPinToInterrupt(encoders[i].dtPin),  readEncoders, CHANGE);
+    pinMode(encoders[i].swPin, INPUT_PULLUP);
+    swLastState[i] = HIGH;
+    swLastDebounce[i] = 0;
   }
 }
 
@@ -79,6 +87,19 @@ void loop() {
       }
     }
   }
+
+  // Poll button states with debounce
+  unsigned long now = millis();
+  for (int i = 0; i < NUM_ENCODERS; i++) {
+    uint8_t swState = digitalRead(encoders[i].swPin);
+    if (swState == LOW && swLastState[i] == HIGH && (now - swLastDebounce[i]) > 50) {
+      Serial.print(encoders[i].id);
+      Serial.println(":press");
+      swLastDebounce[i] = now;
+    }
+    swLastState[i] = swState;
+  }
+
   delay(5);
 }
 
