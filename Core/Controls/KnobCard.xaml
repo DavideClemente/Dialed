@@ -17,6 +17,13 @@
                 Content="⚙"
                 Click="OnSettingsClick"/>
 
+            <Button
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Content="{x:Bind FormatMuteIcon(Channel.IsMuted), Mode=OneWay}"
+                Command="{x:Bind Channel.ToggleMuteCommand}"
+                FontSize="20" />
+
             <StackPanel Margin="0,20,0,0">
 
                 <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
@@ -41,7 +48,8 @@
                     Value="{x:Bind Channel.Volume, Mode=TwoWay}"
                     Minimum="0"
                     Maximum="100"
-                    Height="32"/>
+                    Height="32"
+                    Opacity="{x:Bind ConvertMuteToOpacity(Channel.IsMuted), Mode=OneWay}" />
 
                 <TextBlock
                     Text="{x:Bind FormatPercent(Channel.Volume), Mode=OneWay}"

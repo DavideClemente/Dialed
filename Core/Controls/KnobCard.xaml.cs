@@ -24,6 +24,10 @@ public sealed partial class KnobCard : UserControl
 
     public string FormatPercent(double volume) => $"{volume:0}%";
 
+    public string FormatMuteIcon(bool isMuted) => isMuted ? "🔇" : "🔊";
+
+    public double ConvertMuteToOpacity(bool isMuted) => isMuted ? 0.4 : 1.0;
+
     private async void OnSettingsClick(object sender, RoutedEventArgs e)
     {
         if (Channel is null)
