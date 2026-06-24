@@ -5,6 +5,7 @@ using System.Collections.Specialized;
 using System.Linq;
 using AudioMixerWin.Core.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml.Media;
 
 namespace AudioMixerWin.Core.ViewModels;
@@ -33,6 +34,9 @@ public partial class ChannelViewModel : ObservableObject
     [ObservableProperty]
     private ImageSource? iconSource;
 
+    [ObservableProperty]
+    private bool isMuted;
+
     public string DisplayName => AudioManager.GetDisplayName(AppName);
 
     public ChannelViewModel(
@@ -54,6 +58,7 @@ public partial class ChannelViewModel : ObservableObject
         _onHideSession = onHideSession;
         this.appName = appName;
         volume = audioManager.GetVolume(appName) * 100;
+        isMuted = audioManager.GetMute(appName);
 
         AvailableSessions.CollectionChanged += OnAvailableSessionsChanged;
         IconSource = GetSessionIcon(appName);
@@ -81,6 +86,12 @@ public partial class ChannelViewModel : ObservableObject
 
     partial void OnVolumeChanged(double value) =>
         _audioManager.SetVolume(AppName, (float)(value / 100.0));
+
+    partial void OnIsMutedChanged(bool value) =>
+        _audioManager.SetMute(AppName, value);
+
+    [RelayCommand]
+    private void ToggleMute() => IsMuted = !IsMuted;
 
     public IEnumerable<AudioSession> GetSelectableSessions()
     {
