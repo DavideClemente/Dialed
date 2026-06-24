@@ -42,6 +42,18 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool debugSerialEvents;
 
+    [ObservableProperty]
+    private int draggedChannelIndex = -1;
+
+    [ObservableProperty]
+    private int targetDropIndex = -1;
+
+    [ObservableProperty]
+    private bool isDragging;
+
+    [ObservableProperty]
+    private double dragDropIndicatorY = -1;
+
     public ObservableCollection<string> SerialLog { get; } = new();
 
     public ObservableCollection<ChannelViewModel> Channels { get; } = new();
@@ -138,6 +150,17 @@ public partial class MainViewModel : ObservableObject
             .ToList();
 
         SettingsService.Save(_settings);
+    }
+
+    internal void ReorderChannels(int fromIndex, int toIndex)
+    {
+        if (fromIndex < 0 || toIndex < 0 || fromIndex >= Channels.Count || toIndex >= Channels.Count || fromIndex == toIndex)
+            return;
+
+        var channel = Channels[fromIndex];
+        Channels.RemoveAt(fromIndex);
+        Channels.Insert(toIndex, channel);
+        SaveChannels();
     }
 
     public string? HideSession(AudioSession session)

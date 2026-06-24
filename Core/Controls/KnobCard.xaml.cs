@@ -3,6 +3,7 @@ using AudioMixerWin.Core.Models;
 using AudioMixerWin.Core.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Windows.UI;
 
@@ -63,5 +64,37 @@ public sealed partial class KnobCard : UserControl
         {
             Channel.Remove();
         }
+    }
+
+    private void OnPointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        var mainPage = FindParentMainPage();
+        mainPage?.OnKnobCardPointerPressed(this, e);
+    }
+
+    private void OnPointerMoved(object sender, PointerRoutedEventArgs e)
+    {
+        var mainPage = FindParentMainPage();
+        mainPage?.OnKnobCardPointerMoved(this, e);
+    }
+
+    private void OnPointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        var mainPage = FindParentMainPage();
+        mainPage?.OnKnobCardPointerReleased(this, e);
+    }
+
+    private void OnPointerCaptureLost(object sender, PointerRoutedEventArgs e)
+    {
+        var mainPage = FindParentMainPage();
+        mainPage?.OnKnobCardPointerCaptureLost(this, e);
+    }
+
+    private Core.Views.MainPage? FindParentMainPage()
+    {
+        var parent = VisualTreeHelper.GetParent(this);
+        while (parent != null && parent is not Core.Views.MainPage)
+            parent = VisualTreeHelper.GetParent(parent);
+        return parent as Core.Views.MainPage;
     }
 }

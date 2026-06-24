@@ -63,6 +63,7 @@ namespace AudioMixerWin
             _appWindow = AppWindow.GetFromWindowId(Win32Interop.GetWindowIdFromWindow(hwnd));
             _appWindow.SetIcon(_iconPath);
             _appWindow.Closing += OnWindowClosing;
+            _appWindow.Changed += OnAppWindowChanged;
             ConfigureTitleBar();
 
             this.Activated += OnFirstActivated;
@@ -128,6 +129,18 @@ namespace AudioMixerWin
                 ExitApp();
             else if (result == ContentDialogResult.Secondary)
                 MinimizeToTray();
+        }
+
+        private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
+        {
+            if (args.DidPresenterChange || !args.DidSizeChange && !args.DidPositionChange)
+            {
+                if (_appWindow.Presenter is OverlappedPresenter p &&
+                    p.State == OverlappedPresenterState.Minimized)
+                {
+                    MinimizeToTray();
+                }
+            }
         }
 
         private void MinimizeToTray() => WindowExtensions.Hide(this);

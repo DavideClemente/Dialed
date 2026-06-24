@@ -12,16 +12,20 @@
     <Grid Padding="24">
 
         <ScrollViewer>
-            <ItemsRepeater ItemsSource="{x:Bind ViewModel.Channels}">
-                <ItemsRepeater.Layout>
-                    <UniformGridLayout MinItemWidth="260" MinItemHeight="200" ItemsStretch="Fill" />
-                </ItemsRepeater.Layout>
-                <ItemsRepeater.ItemTemplate>
-                    <DataTemplate x:DataType="vm:ChannelViewModel">
-                        <controls:KnobCard Channel="{x:Bind}" />
-                    </DataTemplate>
-                </ItemsRepeater.ItemTemplate>
-            </ItemsRepeater>
+            <Grid>
+                <ItemsRepeater x:Name="ChannelsRepeater" ItemsSource="{x:Bind ViewModel.Channels}">
+                    <ItemsRepeater.Layout>
+                        <UniformGridLayout MinItemWidth="260" MinItemHeight="200" ItemsStretch="Fill" />
+                    </ItemsRepeater.Layout>
+                    <ItemsRepeater.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ChannelViewModel">
+                            <Grid>
+                                <controls:KnobCard Channel="{x:Bind}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+            </Grid>
         </ScrollViewer>
 
         <Button
