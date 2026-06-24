@@ -1,7 +1,10 @@
 using System;
 using AudioMixerWin.Core.ViewModels;
 using AudioMixerWin.Core.Views;
+using CommunityToolkit.Mvvm.Input;
+using H.NotifyIcon;
 using Microsoft.UI;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -19,6 +22,9 @@ namespace AudioMixerWin
 
         private readonly MainPage _mainPage;
         private readonly SettingsPage _settingsPage;
+        private readonly AppWindow _appWindow;
+        private readonly TaskbarIcon _trayIcon;
+        private bool _closeConfirmed;
 
         private bool _isDraggingSplitter;
         private double _dragStartX;
@@ -29,9 +35,18 @@ namespace AudioMixerWin
             InitializeComponent();
 
             var hwnd = WindowNative.GetWindowHandle(this);
-            var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(
-                Win32Interop.GetWindowIdFromWindow(hwnd));
-            appWindow.SetIcon("Assets\\AudioMixer.ico");
+            _appWindow = AppWindow.GetFromWindowId(Win32Interop.GetWindowIdFromWindow(hwnd));
+            _appWindow.SetIcon("Assets\\AudioMixer.ico");
+            _appWindow.Closing += OnWindowClosing;
+
+            _trayIcon = new TaskbarIcon
+            {
+                ToolTipText = "Audio Mixer",
+                Icon = new System.Drawing.Icon("Assets\\AudioMixer.ico"),
+                LeftClickCommand = new RelayCommand(RestoreWindow),
+                DoubleClickCommand = new RelayCommand(RestoreWindow),
+            };
+            _trayIcon.ForceCreate(enablesEfficiencyMode: false);
 
             _mainPage = new MainPage(ViewModel);
             _settingsPage = new SettingsPage(ViewModel);
@@ -40,6 +55,43 @@ namespace AudioMixerWin
 
             NavView.OpenPaneLength = ViewModel.NavPaneWidth;
             PositionSplitter(ViewModel.NavPaneWidth);
+        }
+
+        private async void OnWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
+        {
+            if (_closeConfirmed)
+                return;
+
+            args.Cancel = true;
+
+            var dialog = new ContentDialog
+            {
+                Title = "Close Audio Mixer",
+                Content = "Do you want to close the app or minimize it to the system tray?",
+                PrimaryButtonText = "Close",
+                SecondaryButtonText = "Minimize to Tray",
+                CloseButtonText = "Cancel",
+                XamlRoot = Content.XamlRoot,
+                DefaultButton = ContentDialogButton.Secondary,
+            };
+
+            var result = await dialog.ShowAsync();
+
+            if (result == ContentDialogResult.Primary)
+                ExitApp();
+            else if (result == ContentDialogResult.Secondary)
+                MinimizeToTray();
+        }
+
+        private void MinimizeToTray() => WindowExtensions.Hide(this);
+
+        private void RestoreWindow() => WindowExtensions.Show(this);
+
+        private void ExitApp()
+        {
+            _closeConfirmed = true;
+            _trayIcon.Dispose();
+            _appWindow.Destroy();
         }
 
         private void OnNavSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
