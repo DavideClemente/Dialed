@@ -215,10 +215,11 @@ static void animateIdle(unsigned long now) {
   // Compose a bluish-white ring color: (R=lvl, G=lvlG, B=31)
   uint16_t ring = ((uint16_t)lvl << 11) | ((uint16_t)lvlG << 5) | 0x1F;
 
-  // Dynamic breathing circle (radius slightly animates: 104..107)
-  int ringR = 104 + (int)(3 * breath);
-  tft.drawCircle(CX, CY, ringR,     ring);
-  tft.drawCircle(CX, CY, ringR + 1, ring);
+  // Breathing circle: FIXED radius so each frame overwrites the same pixels
+  // (a varying radius would leave faint ghost rings since old radii aren't
+  // erased). The "breath" is the brightness pulse in `ring`, not the size.
+  tft.drawCircle(CX, CY, 105, ring);
+  tft.drawCircle(CX, CY, 106, ring);
 
   // Three orbiting colored dots (app accent colors from prototype)
   // Erase previous positions, compute new ones, draw
