@@ -9,7 +9,7 @@ static TFT_eSprite numSpr  = TFT_eSprite(&tft);
 static bool        numSprOK = false;
 
 // ── Geometry (match prototype CONSTANTS TABLE) ────────────────────────────────
-// CX=120, CY=120, ARC_R=108, ARC_W=9, A0=32.4°, SWEEP=295.2°
+// CX=120, CY=120, ARC_R=108, ARC_W=9, ARC_A0=32.4°, SWEEP=295.2°
 // 0° = 6 o'clock, clockwise (firmware convention).
 // Arc outer radius = ARC_R + ARC_W/2 = 112 (px)
 // Arc inner radius = ARC_R - ARC_W/2 = 103 (px)
@@ -17,7 +17,7 @@ static const int   CX    = 120;
 static const int   CY    = 120;
 static const int   ARC_R = 108;   // arc stroke-center radius
 static const int   ARC_W = 9;     // arc stroke width
-static const float A0    = 32.4f; // start angle (deg), 0=6 o'clock, CW
+static const float ARC_A0    = 32.4f; // start angle (deg), 0=6 o'clock, CW
 static const float SWEEP = 295.2f;// total arc sweep (deg)
 
 // TRACK: #2A2A2A → RGB565: (0x2A>>3)=5, (0x2A>>2)=10, (0x2A>>3)=5
@@ -78,7 +78,7 @@ static uint16_t accent() {
 // color: pass TFT_WHITE for the live tip; pass TRACK or arc fill color to erase.
 static void drawTipDot(float frac, uint16_t color) {
   int x, y;
-  arcPoint(A0 + SWEEP * frac, ARC_R, x, y);
+  arcPoint(ARC_A0 + SWEEP * frac, ARC_R, x, y);
   tft.fillCircle(x, y, TIP_DOT_R, color);
 }
 
@@ -117,8 +117,8 @@ static void fullActiveRedraw() {
   tft.drawSmoothArc(CX, CY,
                     ARC_R + ARC_W / 2,  // outer radius = 112
                     ARC_R - ARC_W / 2,  // inner radius = 103
-                    (uint32_t)A0,
-                    (uint32_t)(A0 + SWEEP),
+                    (uint32_t)ARC_A0,
+                    (uint32_t)(ARC_A0 + SWEEP),
                     TRACK, TFT_BLACK, true);
 
   // Icon (only when the host has sent one for this knob)
@@ -165,8 +165,8 @@ static void eraseTipAt(float frac, uint16_t col) {
     tft.drawSmoothArc(CX, CY,
                       ARC_R + ARC_W / 2,
                       ARC_R - ARC_W / 2,
-                      (uint32_t)(A0 + SWEEP * lo),
-                      (uint32_t)(A0 + SWEEP * fillHi),
+                      (uint32_t)(ARC_A0 + SWEEP * lo),
+                      (uint32_t)(ARC_A0 + SWEEP * fillHi),
                       col, TFT_BLACK, false);
   }
 
@@ -178,8 +178,8 @@ static void eraseTipAt(float frac, uint16_t col) {
     tft.drawSmoothArc(CX, CY,
                       ARC_R + ARC_W / 2,
                       ARC_R - ARC_W / 2,
-                      (uint32_t)(A0 + SWEEP * trackLo),
-                      (uint32_t)(A0 + SWEEP * hi),
+                      (uint32_t)(ARC_A0 + SWEEP * trackLo),
+                      (uint32_t)(ARC_A0 + SWEEP * hi),
                       TRACK, TFT_BLACK, false);
   }
 }
@@ -199,16 +199,16 @@ static void animateActive() {
     tft.drawSmoothArc(CX, CY,
                       ARC_R + ARC_W / 2,
                       ARC_R - ARC_W / 2,
-                      (uint32_t)(A0 + SWEEP * lastArcFrac),
-                      (uint32_t)(A0 + SWEEP * shownVol),
+                      (uint32_t)(ARC_A0 + SWEEP * lastArcFrac),
+                      (uint32_t)(ARC_A0 + SWEEP * shownVol),
                       col, TFT_BLACK, false);
   } else if (shownVol < lastArcFrac - 0.0005f) {
     // Volume decreased: revert segment to track color
     tft.drawSmoothArc(CX, CY,
                       ARC_R + ARC_W / 2,
                       ARC_R - ARC_W / 2,
-                      (uint32_t)(A0 + SWEEP * shownVol),
-                      (uint32_t)(A0 + SWEEP * lastArcFrac),
+                      (uint32_t)(ARC_A0 + SWEEP * shownVol),
+                      (uint32_t)(ARC_A0 + SWEEP * lastArcFrac),
                       TRACK, TFT_BLACK, false);
   }
 
