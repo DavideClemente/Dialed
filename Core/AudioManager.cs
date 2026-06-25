@@ -161,9 +161,8 @@ public class AudioManager
         {
             argb = Array.Empty<byte>();
             var procs = Process.GetProcessesByName(processName);
-            if (procs.Length == 0) return false;
-
-            var path = procs[0].MainModule?.FileName;
+            string? path = procs.Length > 0 ? procs[0].MainModule?.FileName : null;
+            foreach (var p in procs) p.Dispose();
             if (path is null) return false;
 
             using var icon = Icon.ExtractAssociatedIcon(path);
