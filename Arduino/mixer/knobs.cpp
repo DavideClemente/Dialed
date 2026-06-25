@@ -103,6 +103,10 @@ void knobsLoop() {
   }
 
 #else
+  static unsigned long lastSample = 0;
+  if (millis() - lastSample < 25) return;
+  lastSample = millis();
+
   for (int i = 0; i < NUM_POTS; i++) {
     float val = analogRead(pots[i].pin) / 4095.0f;
     smoothed[i] = smoothed[i] * 0.85f + val * 0.15f;
@@ -115,6 +119,5 @@ void knobsLoop() {
       if (s_cb) s_cb(pots[i].id, smoothed[i]);
     }
   }
-  delay(50);
 #endif
 }
