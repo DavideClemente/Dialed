@@ -43,14 +43,14 @@ public class SerialManager
         catch { }
     }
 
-    public void SendAssignment(int knobIndex, string appName, byte[] iconRgb565)
+    public void SendAssignment(int knobIndex, string appName, (byte R, byte G, byte B) color, byte[] iconRgb565)
     {
         if (!_port.IsOpen) return;
         try
         {
             var knobId = $"knob{knobIndex + 1}";
-            var safeName = appName.Replace("\r", "").Replace("\n", "");
-            _port.WriteLine($"assign:{knobId}:{safeName}");
+            var hex = $"{color.R:X2}{color.G:X2}{color.B:X2}";
+            _port.WriteLine($"assign:{knobId}:{hex}:{appName}");
             if (iconRgb565.Length > 0)
                 _port.WriteLine($"icon:{knobId}:{Convert.ToBase64String(iconRgb565)}");
         }

@@ -165,8 +165,9 @@ public partial class MainViewModel : ObservableObject
 
     private void SyncChannel(ChannelViewModel ch)
     {
+        var color = _audioManager.GetIconColor(ch.AppName);
         var icon = _audioManager.GetIconRgb565(ch.AppName);
-        _serial.SendAssignment(ch.KnobIndex, ch.AppName, icon);
+        _serial.SendAssignment(ch.KnobIndex, ch.AppName, color, icon);
         _serial.SendVolume(ch.KnobIndex, _audioManager.GetVolume(ch.AppName));
     }
 
