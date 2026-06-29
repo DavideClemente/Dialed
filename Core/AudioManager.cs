@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using AudioMixerWin.Core.Models;
+using AudioMixerWin.Core.Services;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using NAudio.CoreAudioApi;
@@ -30,6 +31,9 @@ public class AudioManager
         private readonly Dictionary<string, ImageSource?> _iconCache = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, byte[]> _iconRgb565Cache = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, (byte R, byte G, byte B)> _iconColorCache = new(StringComparer.OrdinalIgnoreCase);
+        // Canonical 64x64 straight-alpha BGRA per process; persisted to disk so icons
+        // survive restarts even when the source process is no longer running.
+        private readonly Dictionary<string, byte[]> _iconBgraCache = new(StringComparer.OrdinalIgnoreCase);
         private static readonly (byte R, byte G, byte B) DefaultAccent = (0, 200, 255);
 
         public AudioManager()
@@ -88,28 +92,23 @@ public class AudioManager
                 .ToList();;
         }
 
-        private ImageSource? GetIconForProcess(Process process)
+        // Public so the UI can recover an icon for an assigned-but-not-running app on restart.
+        public ImageSource? GetIcon(string processName) => BuildIcon(processName, null);
+
+        private ImageSource? GetIconForProcess(Process process) =>
+            BuildIcon(process.ProcessName, process);
+
+        private ImageSource? BuildIcon(string processName, Process? live)
         {
-            if (_iconCache.TryGetValue(process.ProcessName, out var cached))
+            if (_iconCache.TryGetValue(processName, out var cached))
                 return cached;
 
-            ImageSource? icon = null;
-            try
-            {
-                var path = process.MainModule?.FileName;
-                if (path is not null)
-                {
-                    using var extracted = Icon.ExtractAssociatedIcon(path);
-                    if (extracted is not null)
-                        icon = ConvertIconToBitmapImage(extracted);
-                }
-            }
-            catch
-            {
-                // Some processes (elevated, different bitness, etc.) deny access to MainModule.
-            }
+            var bgra = GetIconBgra(processName, live);
+            if (bgra is null)
+                return null; // don't cache the miss — a later live launch should still populate
 
-            _iconCache[process.ProcessName] = icon;
+            var icon = BgraToWriteableBitmap(bgra);
+            _iconCache[processName] = icon;
             return icon;
         }
 
@@ -118,23 +117,11 @@ public class AudioManager
             if (_iconRgb565Cache.TryGetValue(processName, out var cached))
                 return cached;
 
-            byte[] result = Array.Empty<byte>();
-            try
-            {
-                var procs = Process.GetProcessesByName(processName);
-                if (procs.Length > 0)
-                {
-                    var path = procs[0].MainModule?.FileName;
-                    if (path is not null)
-                    {
-                        using var icon = Icon.ExtractAssociatedIcon(path);
-                        if (icon is not null)
-                            result = ConvertIconToRgb565(icon);
-                    }
-                }
-            }
-            catch { }
+            var bgra = GetIconBgra(processName, null);
+            if (bgra is null)
+                return Array.Empty<byte>(); // don't cache the miss
 
+            var result = Bgra64ToRgb565(bgra);
             _iconRgb565Cache[processName] = result;
             return result;
         }
@@ -144,31 +131,66 @@ public class AudioManager
             if (_iconColorCache.TryGetValue(processName, out var cached))
                 return cached;
 
-            var result = DefaultAccent;
-            try
-            {
-                if (TryGetIconArgb(processName, out var argb))
-                    result = ComputeDominantColor(argb);
-            }
-            catch { }
+            var bgra = GetIconBgra(processName, null);
+            if (bgra is null)
+                return DefaultAccent; // don't cache the miss
 
+            var result = ComputeDominantColor(bgra);
             _iconColorCache[processName] = result;
             return result;
         }
 
-        // Returns the 64x64 icon as raw BGRA bytes (Format32bppArgb memory order: B,G,R,A).
-        private static bool TryGetIconArgb(string processName, out byte[] argb)
+        // Resolves the canonical 64x64 BGRA buffer for a process. A fresh extraction from a
+        // running process is persisted to disk; if the process isn't running, the last-known
+        // icon is restored from disk so it survives restarts and app disassociation.
+        private byte[]? GetIconBgra(string processName, Process? live)
         {
-            argb = Array.Empty<byte>();
-            var procs = Process.GetProcessesByName(processName);
-            string? path = procs.Length > 0 ? procs[0].MainModule?.FileName : null;
-            foreach (var p in procs) p.Dispose();
-            if (path is null) return false;
+            if (_iconBgraCache.TryGetValue(processName, out var cached))
+                return cached;
 
+            byte[]? bgra = null;
+            try
+            {
+                string? path = null;
+                if (live is not null)
+                {
+                    path = live.MainModule?.FileName;
+                }
+                else
+                {
+                    var procs = Process.GetProcessesByName(processName);
+                    if (procs.Length > 0)
+                        path = procs[0].MainModule?.FileName;
+                    foreach (var p in procs) p.Dispose();
+                }
+
+                if (path is not null)
+                    bgra = ExtractBgraFromPath(path);
+            }
+            catch
+            {
+                // Some processes (elevated, different bitness, etc.) deny access to MainModule.
+            }
+
+            if (bgra is not null)
+                IconStore.Save(processName, bgra);   // fresh extraction → persist
+            else
+                bgra = IconStore.Load(processName);   // not running → restore last-known
+
+            // Only cache hits; a total miss stays uncached so a later live launch can populate it.
+            if (bgra is not null)
+                _iconBgraCache[processName] = bgra;
+            return bgra;
+        }
+
+        // Renders the file's associated icon to a 64x64 straight-alpha BGRA buffer
+        // (Format32bppArgb memory order: B,G,R,A). Stride is exactly width*4 (no padding).
+        private static byte[]? ExtractBgraFromPath(string path)
+        {
             using var icon = Icon.ExtractAssociatedIcon(path);
-            if (icon is null) return false;
+            if (icon is null) return null;
 
-            const int size = 64;
+            const int size = IconStore.IconSize;
             using var bmp = new System.Drawing.Bitmap(size, size, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             using (var g = System.Drawing.Graphics.FromImage(bmp))
             {
@@ -183,11 +205,11 @@ public class AudioManager
                 System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             try
             {
-                argb = new byte[data.Stride * size];
-                Marshal.Copy(data.Scan0, argb, 0, argb.Length);
+                var bgra = new byte[data.Stride * size];
+                Marshal.Copy(data.Scan0, bgra, 0, bgra.Length);
+                return bgra;
             }
             finally { bmp.UnlockBits(data); }
-            return true;
         }
 
         // Coarse-histogram dominant color: skip transparent/near-gray/near-dark pixels,
@@ -223,77 +245,49 @@ public class AudioManager
             return ((byte)(bs.R / bs.N), (byte)(bs.G / bs.N), (byte)(bs.B / bs.N));
         }
 
-        private static byte[] ConvertIconToRgb565(Icon icon)
+        // Converts the 64x64 straight-alpha BGRA buffer to RGB565 (LSB first), blended onto black.
+        private static byte[] Bgra64ToRgb565(byte[] bgra)
         {
-            const int size = 64;
-            using var bmp = new System.Drawing.Bitmap(size, size, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-            using var g = System.Drawing.Graphics.FromImage(bmp);
-            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-            using var srcBmp = icon.ToBitmap();
-            g.DrawImage(srcBmp, 0, 0, size, size);
-
-            var data = bmp.LockBits(
-                new System.Drawing.Rectangle(0, 0, size, size),
-                System.Drawing.Imaging.ImageLockMode.ReadOnly,
-                System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-            try
+            const int size = IconStore.IconSize;
+            var rgb565 = new byte[size * size * 2];
+            for (int i = 0; i < size * size; i++)
             {
-                var raw = new byte[data.Stride * size];
-                Marshal.Copy(data.Scan0, raw, 0, raw.Length);
+                int o = i * 4;
+                byte b = bgra[o];
+                byte grn = bgra[o + 1];
+                byte r = bgra[o + 2];
+                byte a = bgra[o + 3];
+                // Alpha-blend onto black
+                r = (byte)(r * a / 255);
+                grn = (byte)(grn * a / 255);
+                b = (byte)(b * a / 255);
 
-                var rgb565 = new byte[size * size * 2];
-                for (int i = 0; i < size * size; i++)
-                {
-                    int o = i * 4;
-                    // Format32bppArgb in memory: B, G, R, A
-                    byte b = raw[o];
-                    byte grn = raw[o + 1];
-                    byte r = raw[o + 2];
-                    byte a = raw[o + 3];
-                    // Alpha-blend onto black
-                    r = (byte)(r * a / 255);
-                    grn = (byte)(grn * a / 255);
-                    b = (byte)(b * a / 255);
-
-                    ushort px = (ushort)(((r >> 3) << 11) | ((grn >> 2) << 5) | (b >> 3));
-                    rgb565[i * 2]     = (byte)(px & 0xFF);   // LSB first
-                    rgb565[i * 2 + 1] = (byte)(px >> 8);
-                }
-                return rgb565;
+                ushort px = (ushort)(((r >> 3) << 11) | ((grn >> 2) << 5) | (b >> 3));
+                rgb565[i * 2]     = (byte)(px & 0xFF);   // LSB first
+                rgb565[i * 2 + 1] = (byte)(px >> 8);
             }
-            finally
-            {
-                bmp.UnlockBits(data);
-            }
+            return rgb565;
         }
 
-        private static WriteableBitmap ConvertIconToBitmapImage(Icon icon)
+        // Builds a WinUI WriteableBitmap from the straight-alpha BGRA buffer. WinUI expects
+        // premultiplied BGRA8, so multiply each channel by alpha.
+        private static WriteableBitmap BgraToWriteableBitmap(byte[] bgra)
         {
-            using var bitmap = icon.ToBitmap();
-            var width = bitmap.Width;
-            var height = bitmap.Height;
-
-            var bitmapData = bitmap.LockBits(
-                new Rectangle(0, 0, width, height),
-                System.Drawing.Imaging.ImageLockMode.ReadOnly,
-                System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
-
-            try
+            const int size = IconStore.IconSize;
+            var premultiplied = new byte[bgra.Length];
+            for (int o = 0; o < bgra.Length; o += 4)
             {
-                var bytes = new byte[bitmapData.Stride * height];
-                Marshal.Copy(bitmapData.Scan0, bytes, 0, bytes.Length);
-
-                var writeableBitmap = new WriteableBitmap(width, height);
-                using var pixelStream = writeableBitmap.PixelBuffer.AsStream();
-                pixelStream.Write(bytes, 0, bytes.Length);
-
-                return writeableBitmap;
+                byte a = bgra[o + 3];
+                premultiplied[o]     = (byte)(bgra[o] * a / 255);
+                premultiplied[o + 1] = (byte)(bgra[o + 1] * a / 255);
+                premultiplied[o + 2] = (byte)(bgra[o + 2] * a / 255);
+                premultiplied[o + 3] = a;
             }
-            finally
-            {
-                bitmap.UnlockBits(bitmapData);
-            }
+
+            var writeableBitmap = new WriteableBitmap(size, size);
+            using var pixelStream = writeableBitmap.PixelBuffer.AsStream();
+            pixelStream.Write(premultiplied, 0, premultiplied.Length);
+            return writeableBitmap;
         }
         
         public float GetMasterVolume() => _device.AudioEndpointVolume.MasterVolumeLevelScalar;

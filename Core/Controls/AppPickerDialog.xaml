@@ -78,12 +78,15 @@
                 <DataTemplate x:DataType="models:AudioSession">
                     <Grid ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="{x:Bind DisplayName}" VerticalAlignment="Center"
+                        <Image Source="{x:Bind IconSource}" Width="20" Height="20"
+                               VerticalAlignment="Center" Stretch="UniformToFill"/>
+                        <TextBlock Grid.Column="1" Text="{x:Bind DisplayName}" VerticalAlignment="Center"
                                    FontSize="13" Foreground="#C8C8C8"/>
-                        <Button Grid.Column="1" Content="Hide" Tag="{x:Bind}" Click="OnHideClick"
+                        <Button Grid.Column="2" Content="Hide" Tag="{x:Bind}" Click="OnHideClick"
                                 Padding="10,4" CornerRadius="6" BorderThickness="1">
                             <Button.Resources>
                                 <SolidColorBrush x:Key="ButtonBackground" Color="#1C1C1C"/>

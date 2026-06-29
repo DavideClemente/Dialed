@@ -27,8 +27,10 @@ static const uint16_t TRACK   = 0x2945;
 // Default accent when knobColor is unset: #00C8FF → RGB565 0x065F
 static const uint16_t ACCENT_DEFAULT = 0x065F;
 
-// Tip dot radius (px), color white
-static const int TIP_DOT_R = 6;
+// Tip dot radius (px), color white. Kept <= ARC_W/2 so the dot stays inside the
+// arc band: the per-frame full-arc redraw then erases the previous dot for free
+// (no separate erase op, which would flash the dot black on a non-buffered TFT).
+static const int TIP_DOT_R = 4;
 
 // ── Animation timing ──────────────────────────────────────────────────────────
 static const unsigned long ANIM_DT        = 16;   // active animation step (~60 fps)
@@ -41,8 +43,11 @@ static Mode  mode       = IDLE;
 static int   activeKnob = -1;
 static float targetVol  = 0.0f;
 static float shownVol   = 0.0f;
-static float lastArcFrac= 0.0f;
 static int   lastPct    = -1;
+
+// Last shown volume per knob (-1 = never shown). Lets the gauge resume where it
+// left off when a knob re-activates from idle, instead of sweeping up from 0.
+static float lastKnobVol[MAX_KNOBS];
 static bool  appDirty   = false;
 static bool  idleDirty  = true;
 
@@ -73,14 +78,6 @@ static uint16_t accent() {
 }
 
 // ── Active screen helpers ─────────────────────────────────────────────────────
-
-// Draw (or erase) the tip dot at the given arc fraction.
-// color: pass TFT_WHITE for the live tip; pass TRACK or arc fill color to erase.
-static void drawTipDot(float frac, uint16_t color) {
-  int x, y;
-  arcPoint(ARC_A0 + SWEEP * frac, ARC_R, x, y);
-  tft.fillCircle(x, y, TIP_DOT_R, color);
-}
 
 // Draw the number percentage inside the numSpr sprite and push it to the screen.
 // Sprite: 150×56 (FIX 2), center = (75, 28).
@@ -124,7 +121,12 @@ static void fullActiveRedraw() {
   // Icon (only when the host has sent one for this knob)
   if (activeKnob >= 0 && activeKnob < MAX_KNOBS && knobHasIcon[activeKnob]) {
     // Icon top-left = (CX - ICON_W/2, 48) = (88, 48); bottom = 48+64 = 112
+    // knobIcon holds host-order RGB565 (decoded little-endian). The GC9A01 wants
+    // high-byte-first on the bus, so enable byte swapping for this push only;
+    // restore the default afterwards so the number sprite (pushSprite) is unaffected.
+    tft.setSwapBytes(true);
     tft.pushImage(CX - ICON_W / 2, 48, ICON_W, ICON_H, knobIcon[activeKnob]);
+    tft.setSwapBytes(false);
   }
 
   // App name: centered at (CX, 130) — between icon bottom (~112) and number (~165)
@@ -137,55 +139,20 @@ static void fullActiveRedraw() {
   tft.setTextSize(1);
   tft.drawString(label, CX, 130);
 
-  // Reset animation state so the arc intro starts from 0
-  lastArcFrac = 0.0f;
-  shownVol    = 0.0f;
+  // shownVol is seeded by displayShowKnob (resumes the knob's last level), so
+  // don't reset it here — only force the number to redraw.
   lastPct     = -1;
 }
 
-// Erase the tip dot at arc fraction `frac` by repainting the underlying arc
-// over a ±4° window centered on that fraction.  The window is split at
-// shownVol (the current fill boundary): the portion ≤ shownVol is painted in
-// accent color, the portion > shownVol is painted in TRACK color.
-// This prevents a stray "crumb" when volume reverses direction and the old dot
-// straddles both the filled and unfilled regions.
-static void eraseTipAt(float frac, uint16_t col) {
-  // Convert ±4° window to fraction units and clamp to [0,1]
-  const float HALF_WIN = 4.0f / SWEEP; // 4 degrees expressed as arc fraction
-  float lo = frac - HALF_WIN;
-  float hi = frac + HALF_WIN;
-  if (lo < 0.0f) lo = 0.0f;
-  if (hi > 1.0f) hi = 1.0f;
-
-  // Filled portion of the window (≤ shownVol) → accent color
-  float fillHi = shownVol;
-  if (fillHi > lo && fillHi > hi) fillHi = hi;  // clamp to window
-
-  if (lo < fillHi) {
-    tft.drawSmoothArc(CX, CY,
-                      ARC_R + ARC_W / 2,
-                      ARC_R - ARC_W / 2,
-                      (uint32_t)(ARC_A0 + SWEEP * lo),
-                      (uint32_t)(ARC_A0 + SWEEP * fillHi),
-                      col, TFT_BLACK, false);
-  }
-
-  // Unfilled portion of the window (> shownVol) → TRACK color
-  float trackLo = shownVol;
-  if (trackLo < lo) trackLo = lo;  // clamp to window
-
-  if (trackLo < hi) {
-    tft.drawSmoothArc(CX, CY,
-                      ARC_R + ARC_W / 2,
-                      ARC_R - ARC_W / 2,
-                      (uint32_t)(ARC_A0 + SWEEP * trackLo),
-                      (uint32_t)(ARC_A0 + SWEEP * hi),
-                      TRACK, TFT_BLACK, false);
-  }
-}
-
-// Incremental arc update + tip dot + number sprite.
-// Called every ANIM_DT ms when in ACTIVE mode.
+// Full arc update + tip dot + number sprite.
+// Called every ANIM_DT ms when in ACTIVE mode (only while shownVol is moving).
+//
+// Rather than stamping per-frame delta segments + an AA "erase" window — which
+// left accumulating anti-aliased seams along the swept path — we repaint the
+// whole ring each frame as exactly two smooth arcs that meet at a single
+// shared boundary angle: the filled portion (accent) and the remaining track
+// portion. Both are drawn fresh over the same pixels every frame, so there is
+// no seam accumulation, and the previous tip dot is overwritten automatically.
 static void animateActive() {
   // Ease shownVol toward targetVol (k = 0.08, prototype final value)
   shownVol += (targetVol - shownVol) * 0.08f;
@@ -193,34 +160,29 @@ static void animateActive() {
 
   uint16_t col = accent();
 
-  // Arc delta — only repaint the changed segment, not the full arc
-  if (shownVol > lastArcFrac + 0.0005f) {
-    // Volume increased: fill new segment with accent color
-    tft.drawSmoothArc(CX, CY,
-                      ARC_R + ARC_W / 2,
-                      ARC_R - ARC_W / 2,
-                      (uint32_t)(ARC_A0 + SWEEP * lastArcFrac),
-                      (uint32_t)(ARC_A0 + SWEEP * shownVol),
-                      col, TFT_BLACK, false);
-  } else if (shownVol < lastArcFrac - 0.0005f) {
-    // Volume decreased: revert segment to track color
-    tft.drawSmoothArc(CX, CY,
-                      ARC_R + ARC_W / 2,
-                      ARC_R - ARC_W / 2,
-                      (uint32_t)(ARC_A0 + SWEEP * shownVol),
-                      (uint32_t)(ARC_A0 + SWEEP * lastArcFrac),
-                      TRACK, TFT_BLACK, false);
+  // Shared boundary angle (rounded once so the two arcs abut with no gap/overlap)
+  uint32_t a0  = (uint32_t)(ARC_A0 + 0.5f);
+  uint32_t a1  = (uint32_t)(ARC_A0 + SWEEP + 0.5f);
+  uint32_t mid = (uint32_t)(ARC_A0 + SWEEP * shownVol + 0.5f);
+  if (mid < a0) mid = a0;
+  if (mid > a1) mid = a1;
+
+  // Filled portion (accent) — skip when empty to avoid a degenerate arc
+  if (mid > a0) {
+    tft.drawSmoothArc(CX, CY, ARC_R + ARC_W / 2, ARC_R - ARC_W / 2,
+                      a0, mid, col, TFT_BLACK, true);
+  }
+  // Remaining track portion — skip when full
+  if (mid < a1) {
+    tft.drawSmoothArc(CX, CY, ARC_R + ARC_W / 2, ARC_R - ARC_W / 2,
+                      mid, a1, TRACK, TFT_BLACK, true);
   }
 
-  // Erase old tip dot by repainting the underlying arc beneath it (FIX 3).
-  // A short ±4° arc window centered on lastArcFrac is repainted with the
-  // correct split (accent below shownVol, TRACK above), eliminating the stray
-  // crumb that appeared when volume reversed direction.
-  eraseTipAt(lastArcFrac, col);
-  // Draw new tip dot (white, radius TIP_DOT_R=6) — unchanged
-  drawTipDot(shownVol, TFT_WHITE);
-
-  lastArcFrac = shownVol;
+  // Tip dot (white, radius TIP_DOT_R) sits on the boundary, over the AA seam.
+  // It fits inside the arc band, so next frame's full-arc redraw erases it.
+  int tx, ty;
+  arcPoint(ARC_A0 + SWEEP * shownVol, ARC_R, tx, ty);
+  tft.fillCircle(tx, ty, TIP_DOT_R, TFT_WHITE);
 
   // Number: only redraw when the integer percent changes
   int pct = (int)(shownVol * 100.0f + 0.5f);
@@ -317,6 +279,7 @@ void displaySetup() {
   // NOTE: exact fit must be confirmed on device; reduce setTextSize to 1.5 (or
   // use a narrower font) if "100" still clips at the right edge.
   numSprOK = (numSpr.createSprite(150, 56) != nullptr);
+  for (int i = 0; i < MAX_KNOBS; i++) lastKnobVol[i] = -1.0f;
   idleDirty = true;
   mode      = IDLE;
 }
@@ -325,12 +288,18 @@ void displaySetup() {
 // sets the target volume (0..1). Triggers a full redraw if the app changed.
 void displayShowKnob(int knobIndex, float value) {
   if (knobIndex < 0 || knobIndex >= MAX_KNOBS) return;
+  value = constrain(value, 0.0f, 1.0f);
   if (mode != ACTIVE || knobIndex != activeKnob) {
     activeKnob = knobIndex;
     appDirty   = true;
+    // Resume from this knob's last shown level so the gauge eases the short
+    // distance to the new value instead of sweeping up from 0. Snap to value
+    // the first time the knob is shown (no prior level known).
+    shownVol = (lastKnobVol[knobIndex] >= 0.0f) ? lastKnobVol[knobIndex] : value;
   }
   mode      = ACTIVE;
-  targetVol = constrain(value, 0.0f, 1.0f);
+  targetVol = value;
+  lastKnobVol[knobIndex] = value;
 }
 
 // Call when all knobs are idle. Switches to IDLE animated screen.

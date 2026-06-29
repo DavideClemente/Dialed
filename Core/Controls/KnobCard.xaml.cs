@@ -38,6 +38,9 @@ public sealed partial class KnobCard : UserControl
 
     public double ConvertMuteToOpacity(bool isMuted) => isMuted ? 0.35 : 1.0;
 
+    public Visibility ConvertDisconnectedToVisibility(bool isSerialConnected) =>
+        isSerialConnected ? Visibility.Collapsed : Visibility.Visible;
+
     public SolidColorBrush GetMuteBrush(bool isMuted) =>
         new SolidColorBrush(isMuted
             ? Color.FromArgb(255, 42, 8, 8)

@@ -19,6 +19,8 @@ public class SerialManager
         _port.DataReceived += OnData;
     }
 
+    public bool IsConnected => _port.IsOpen;
+
     public void Start()
     {
         _port.Open();

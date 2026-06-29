@@ -38,6 +38,9 @@ public partial class ChannelViewModel : ObservableObject
     [ObservableProperty]
     private bool isMuted;
 
+    [ObservableProperty]
+    private bool isSerialConnected;
+
     public string DisplayName => AudioManager.GetDisplayName(AppName);
 
     public ChannelViewModel(
@@ -89,7 +92,9 @@ public partial class ChannelViewModel : ObservableObject
     }
 
     private ImageSource? GetSessionIcon(string appName) =>
-        AvailableSessions.FirstOrDefault(s => s.ProcessName.Equals(appName, StringComparison.OrdinalIgnoreCase))?.IconSource;
+        AvailableSessions.FirstOrDefault(s => s.ProcessName.Equals(appName, StringComparison.OrdinalIgnoreCase))?.IconSource
+        // App not currently running: recover the last-known icon persisted to disk.
+        ?? _audioManager.GetIcon(appName);
 
     partial void OnVolumeChanged(double value) =>
         _audioManager.SetVolume(AppName, (float)(value / 100.0));

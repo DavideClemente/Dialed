@@ -67,15 +67,26 @@
                                 FontFamily="Segoe UI Variable Display"
                                 Foreground="#F0F0F0"
                                 CharacterSpacing="-15"/>
-                            <Border Background="#141414" CornerRadius="4" Padding="6,2"
-                                    HorizontalAlignment="Left">
-                                <TextBlock
-                                    Text="{x:Bind Channel.KnobLabel, Mode=OneWay}"
-                                    FontSize="9"
-                                    FontFamily="Cascadia Code, Consolas"
-                                    Foreground="#505050"
-                                    CharacterSpacing="100"/>
-                            </Border>
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <Border Background="#141414" CornerRadius="4" Padding="6,2"
+                                        HorizontalAlignment="Left">
+                                    <TextBlock
+                                        Text="{x:Bind Channel.KnobLabel, Mode=OneWay}"
+                                        FontSize="9"
+                                        FontFamily="Cascadia Code, Consolas"
+                                        Foreground="#505050"
+                                        CharacterSpacing="100"/>
+                                </Border>
+                                <Border Background="#1A1400" CornerRadius="4" Padding="5,2"
+                                        Visibility="{x:Bind ConvertDisconnectedToVisibility(Channel.IsSerialConnected), Mode=OneWay}"
+                                        ToolTipService.ToolTip="Board disconnected — config saved, will sync on reconnect">
+                                    <TextBlock
+                                        Text="⚡ offline"
+                                        FontSize="9"
+                                        FontFamily="Cascadia Code, Consolas"
+                                        Foreground="#B89530"/>
+                                </Border>
+                            </StackPanel>
                         </StackPanel>
                     </StackPanel>
 

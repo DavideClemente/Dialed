@@ -21,8 +21,11 @@
 
             <TextBlock Text="COM Port" />
             <ComboBox
-                ItemsSource="{x:Bind PortNames}"
-                SelectedItem="{x:Bind ViewModel.ComPort, Mode=TwoWay}"
+                x:Name="ComPortCombo"
+                ItemsSource="{x:Bind PortInfos}"
+                SelectedValuePath="Port"
+                SelectedValue="{x:Bind ViewModel.ComPort, Mode=TwoWay}"
+                DisplayMemberPath="DisplayText"
                 HorizontalAlignment="Stretch" />
 
             <TextBlock Text="Baud Rate" Margin="0,12,0,0" />

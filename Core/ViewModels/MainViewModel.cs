@@ -80,10 +80,13 @@ public partial class MainViewModel : ObservableObject
         foreach (var process in _settings.ExcludedProcesses)
             HiddenProcesses.Add(process);
 
+        // Serial must be created before channels are added: AddChannelInternal
+        // reads _serial.IsConnected to seed each channel's connected state.
+        _serial = CreateAndStartSerial();
+
         foreach (var config in _settings.Channels)
             AddChannelInternal(config.AppName, config.KnobIndex, save: false);
 
-        _serial = CreateAndStartSerial();
         _ = Task.Run(async () =>
         {
             await Task.Delay(2000);
@@ -114,6 +117,7 @@ public partial class MainViewModel : ObservableObject
             SerialStatus = $"Disconnected: {ex.Message}";
         }
 
+        UpdateChannelsSerialState(serial.IsConnected);
         return serial;
     }
 
@@ -142,7 +146,9 @@ public partial class MainViewModel : ObservableObject
     private void AddChannelInternal(string appName, int? knobIndex = null, bool save = true)
     {
         var index = knobIndex ?? (Channels.Count == 0 ? 0 : Channels.Max(c => c.KnobIndex) + 1);
-        Channels.Add(new ChannelViewModel(index, appName, _audioManager, AvailableSessions, Channels, RemoveChannelInternal, SaveChannels, HideSession, SyncChannel));
+        var ch = new ChannelViewModel(index, appName, _audioManager, AvailableSessions, Channels, RemoveChannelInternal, SaveChannels, HideSession, SyncChannel);
+        ch.IsSerialConnected = _serial.IsConnected;
+        Channels.Add(ch);
 
         if (save)
             SaveChannels();
@@ -161,6 +167,12 @@ public partial class MainViewModel : ObservableObject
             .ToList();
 
         SettingsService.Save(_settings);
+    }
+
+    private void UpdateChannelsSerialState(bool connected)
+    {
+        foreach (var ch in Channels)
+            ch.IsSerialConnected = connected;
     }
 
     private void SyncChannel(ChannelViewModel ch)
@@ -342,6 +354,10 @@ public partial class MainViewModel : ObservableObject
             var before = channel.Volume;
             var next = Math.Clamp(before + delta * EncoderStepPercent, 0, 100);
             channel.Volume = next;
+            // Echo the resulting absolute level back so the device gauge tracks it.
+            // (Encoders only send relative up/down; without this the display has
+            // no source for the true volume — see knobs.cpp.)
+            _serial.SendVolume(index, (float)(next / 100.0));
             var actual = _audioManager.GetVolume(channel.AppName) * 100;
             LogSerial($"{knobId} → {(delta > 0 ? "up" : "down")} | {before:F0}% → {next:F0}% (audio={actual:F0}%)");
         });
