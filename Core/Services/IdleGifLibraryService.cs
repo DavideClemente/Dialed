@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using AudioMixerWin.Core.Models;
 using Windows.Graphics.Imaging;
@@ -42,7 +41,8 @@ public class IdleGifLibraryService
             try
             {
                 using var stream = File.OpenRead(destPath);
-                var decoder = await BitmapDecoder.CreateAsync(stream.AsRandomAccessStream());
+                using var ras = stream.AsRandomAccessStream();
+                var decoder = await BitmapDecoder.CreateAsync(ras);
                 width = (int)decoder.PixelWidth;
                 height = (int)decoder.PixelHeight;
             }
