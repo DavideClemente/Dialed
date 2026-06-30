@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using Windows.Storage;
 
 namespace AudioMixerWin.Core.ViewModels;
 
@@ -18,6 +20,9 @@ public partial class MainViewModel : ObservableObject
     private readonly AppSettings _settings;
     private readonly DispatcherTimer _refreshTimer;
     private SerialManager _serial;
+    private readonly IdleGifLibraryService _idleGifLibrary = new();
+
+    public IdleScreenViewModel? IdleScreen { get; private set; }
 
     [ObservableProperty]
     private string comPort;
@@ -98,6 +103,14 @@ public partial class MainViewModel : ObservableObject
         _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(RefreshIntervalSeconds) };
         _refreshTimer.Tick += (_, _) => RefreshAvailableSessions();
         _refreshTimer.Start();
+    }
+
+    public void InitIdleScreen(
+        Func<Task<IReadOnlyList<StorageFile>>> pickGifs,
+        Func<XamlRoot?> getXamlRoot)
+    {
+        IdleScreen = new IdleScreenViewModel(
+            _settings, _idleGifLibrary, () => SettingsService.Save(_settings), pickGifs, getXamlRoot);
     }
 
     private SerialManager CreateAndStartSerial()
