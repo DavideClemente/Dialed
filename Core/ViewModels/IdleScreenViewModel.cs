@@ -112,7 +112,6 @@ public partial class IdleScreenViewModel : ObservableObject
         }
 
         _save();
-        UpdateUsage();
     }
 
     [RelayCommand]
@@ -135,6 +134,10 @@ public partial class IdleScreenViewModel : ObservableObject
         if (gif == null)
             return;
 
+        var xamlRoot = _getXamlRoot();
+        if (xamlRoot == null)
+            return;
+
         var dialog = new ContentDialog
         {
             Title = "Delete GIF",
@@ -142,7 +145,7 @@ public partial class IdleScreenViewModel : ObservableObject
             PrimaryButtonText = "Delete",
             CloseButtonText = "Cancel",
             DefaultButton = ContentDialogButton.Close,
-            XamlRoot = _getXamlRoot(),
+            XamlRoot = xamlRoot,
         };
 
         if (await dialog.ShowAsync() != ContentDialogResult.Primary)
@@ -159,6 +162,5 @@ public partial class IdleScreenViewModel : ObservableObject
         }
 
         _save();
-        UpdateUsage();
     }
 }
