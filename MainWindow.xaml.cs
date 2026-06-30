@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using AudioMixerWin.Core.ViewModels;
 using AudioMixerWin.Core.Views;
 using CommunityToolkit.Mvvm.Input;
@@ -10,6 +12,8 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Windows.Storage;
+using Windows.Storage.Pickers;
 using Windows.UI;
 using WinRT.Interop;
 
@@ -42,6 +46,7 @@ namespace AudioMixerWin
 
         private readonly MainPage _mainPage;
         private readonly SettingsPage _settingsPage;
+        private IdleScreenPage _idleScreenPage = null!;
         private readonly AppWindow _appWindow;
         private readonly TaskbarIcon _trayIcon;
         private readonly string _iconPath;
@@ -79,6 +84,8 @@ namespace AudioMixerWin
 
             _mainPage = new MainPage(ViewModel);
             _settingsPage = new SettingsPage(ViewModel);
+            ViewModel.InitIdleScreen(PickGifFilesAsync, () => Content?.XamlRoot);
+            _idleScreenPage = new IdleScreenPage(ViewModel.IdleScreen!);
 
             ContentFrame.Content = _mainPage;
 
@@ -166,7 +173,28 @@ namespace AudioMixerWin
 
         private void OnNavSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
-            ContentFrame.Content = args.IsSettingsSelected ? _settingsPage : _mainPage;
+            if (args.IsSettingsSelected)
+            {
+                ContentFrame.Content = _settingsPage;
+                return;
+            }
+
+            var tag = (args.SelectedItem as NavigationViewItem)?.Tag as string;
+            ContentFrame.Content = tag == "idle" ? _idleScreenPage : _mainPage;
+        }
+
+        private async Task<IReadOnlyList<StorageFile>> PickGifFilesAsync()
+        {
+            var picker = new FileOpenPicker
+            {
+                ViewMode = PickerViewMode.Thumbnail,
+                SuggestedStartLocation = PickerLocationId.PicturesLibrary,
+            };
+            picker.FileTypeFilter.Add(".gif");
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, _hwnd);
+
+            var files = await picker.PickMultipleFilesAsync();
+            return files ?? new List<StorageFile>();
         }
 
         private void PositionSplitter(double paneWidth) =>

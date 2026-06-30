@@ -21,6 +21,11 @@
                         <SymbolIcon Symbol="Volume" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem Content="Idle Screen" Tag="idle">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Pictures" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
             </NavigationView.MenuItems>
 
             <Frame x:Name="ContentFrame" />
