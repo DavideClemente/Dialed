@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using AudioMixerWin.Core.Services;
 using AudioMixerWin.Core.ViewModels;
 using AudioMixerWin.Core.Views;
 using CommunityToolkit.Mvvm.Input;
@@ -38,6 +39,16 @@ namespace AudioMixerWin
 
         [DllImport("user32.dll")]
         private static extern IntPtr SetClassLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        private const int SW_RESTORE = 9;
 
         private const double MinPaneWidth = 200;
         private const double MaxPaneWidth = 400;
@@ -80,6 +91,8 @@ namespace AudioMixerWin
                 Icon = new System.Drawing.Icon(_iconPath),
                 LeftClickCommand = new RelayCommand(RestoreWindow),
                 DoubleClickCommand = new RelayCommand(RestoreWindow),
+                ContextMenuMode = ContextMenuMode.PopupMenu,
+                ContextFlyout = BuildTrayMenu(),
             };
             _trayIcon.ForceCreate(enablesEfficiencyMode: false);
 
@@ -90,6 +103,11 @@ namespace AudioMixerWin
             _idleScreenPage = new IdleScreenPage(ViewModel.IdleScreen!);
 
             ContentFrame.Content = _mainPage;
+
+            // The built-in settings item's label follows the OS language even with a
+            // language override, so give it explicit English content. SettingsItem is
+            // only realized once the control template is applied (on Loaded).
+            NavView.Loaded += OnNavViewLoaded;
 
             NavView.OpenPaneLength = ViewModel.NavPaneWidth;
             PositionSplitter(ViewModel.NavPaneWidth);
@@ -123,11 +141,11 @@ namespace AudioMixerWin
 
             var dialog = new ContentDialog
             {
-                Title = "Close Audio Mixer",
-                Content = "Do you want to close the app or minimize it to the system tray?",
-                PrimaryButtonText = "Close",
-                SecondaryButtonText = "Minimize to Tray",
-                CloseButtonText = "Cancel",
+                Title = Loc.Get("Close_Title"),
+                Content = Loc.Get("Close_Content"),
+                PrimaryButtonText = Loc.Get("Close_Primary"),
+                SecondaryButtonText = Loc.Get("Close_Secondary"),
+                CloseButtonText = Loc.Get("Common_Cancel"),
                 XamlRoot = Content.XamlRoot,
                 DefaultButton = ContentDialogButton.Secondary,
             };
@@ -152,14 +170,87 @@ namespace AudioMixerWin
             }
         }
 
+        private MenuFlyout BuildTrayMenu()
+        {
+            var menu = new MenuFlyout();
+
+            void AddItem(string text, Action action)
+            {
+                // PopupMenu (native Win32) mode invokes Command, not the XAML
+                // Click event, so bind the action as a RelayCommand.
+                menu.Items.Add(new MenuFlyoutItem
+                {
+                    Text = text,
+                    Command = new RelayCommand(action),
+                });
+            }
+
+            AddItem(Loc.Get("Tray_Open"), RestoreWindow);
+            menu.Items.Add(new MenuFlyoutSeparator());
+            AddItem(Loc.Get("Nav_Mixer"), () => ShowPage("mixer"));
+            AddItem(Loc.Get("Nav_IdleScreen"), () => ShowPage("idle"));
+            AddItem(Loc.Get("Nav_Output"), () => ShowPage("output"));
+            AddItem(Loc.Get("Nav_Settings"), () => ShowPage("settings"));
+            menu.Items.Add(new MenuFlyoutSeparator());
+            AddItem(Loc.Get("Tray_Quit"), ExitApp);
+
+            return menu;
+        }
+
+        // Navigates the window to a page by NavigationViewItem tag ("settings"
+        // targets the built-in settings item) and brings the window forward.
+        private void ShowPage(string tag)
+        {
+            RestoreWindow();
+
+            if (tag == "settings")
+            {
+                NavView.SelectedItem = NavView.SettingsItem;
+                return;
+            }
+
+            foreach (var menuItem in NavView.MenuItems)
+            {
+                if (menuItem is NavigationViewItem nvi && nvi.Tag as string == tag)
+                {
+                    NavView.SelectedItem = nvi;
+                    break;
+                }
+            }
+        }
+
         private void MinimizeToTray() => WindowExtensions.Hide(this);
 
-        private void RestoreWindow() => WindowExtensions.Show(this);
+        private void RestoreWindow()
+        {
+            WindowExtensions.Show(this);
+
+            // Showing a hidden window leaves it minimized/behind other windows.
+            // Restore the presenter, then force it to the foreground. The click
+            // on the tray icon gives our process foreground rights, so
+            // SetForegroundWindow succeeds here.
+            if (_appWindow.Presenter is OverlappedPresenter p &&
+                p.State == OverlappedPresenterState.Minimized)
+            {
+                p.Restore();
+            }
+
+            ShowWindow(_hwnd, SW_RESTORE);
+            this.Activate();
+            SetForegroundWindow(_hwnd);
+        }
 
         private void ExitApp()
         {
             _trayIcon.Dispose();
             Application.Current.Exit();
+        }
+
+        private void OnNavViewLoaded(object sender, RoutedEventArgs e)
+        {
+            NavView.Loaded -= OnNavViewLoaded;
+            if (NavView.SettingsItem is NavigationViewItem settingsItem)
+                settingsItem.Content = Loc.Get("Nav_Settings");
         }
 
         private void OnFirstActivated(object sender, WindowActivatedEventArgs args)

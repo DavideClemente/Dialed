@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- Navigation -->
+  <data name="Nav_Mixer" xml:space="preserve"><value>Mixer</value></data>
+  <data name="Nav_IdleScreen" xml:space="preserve"><value>Idle Screen</value></data>
+  <data name="Nav_Output" xml:space="preserve"><value>Output</value></data>
+  <data name="Nav_Settings" xml:space="preserve"><value>Settings</value></data>
+
+  <!-- Common -->
+  <data name="Common_Hide" xml:space="preserve"><value>Hide</value></data>
+  <data name="Common_Show" xml:space="preserve"><value>Show</value></data>
+  <data name="Common_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Common_Delete" xml:space="preserve"><value>Delete</value></data>
+
+  <!-- Settings: General -->
+  <data name="Settings_General_Title" xml:space="preserve"><value>General</value></data>
+  <data name="Settings_General_Caption" xml:space="preserve"><value>App-wide preferences.</value></data>
+  <data name="Settings_Language_Label" xml:space="preserve"><value>Language</value></data>
+  <data name="Settings_Language_Desc" xml:space="preserve"><value>Sets the language for menus, dialogs, and error messages.</value></data>
+  <data name="Settings_Language_Restart" xml:space="preserve"><value>Restart the app to apply the language change.</value></data>
+  <data name="Lang_SystemDefault" xml:space="preserve"><value>System default</value></data>
+
+  <!-- Settings: Serial Connection -->
+  <data name="Settings_Serial_Title" xml:space="preserve"><value>Serial Connection</value></data>
+  <data name="Settings_Serial_Caption" xml:space="preserve"><value>Link to the physical controller over its COM port.</value></data>
+  <data name="Settings_ComPort" xml:space="preserve"><value>COM Port</value></data>
+  <data name="Settings_BaudRate" xml:space="preserve"><value>Baud Rate</value></data>
+  <data name="Settings_Reconnect" xml:space="preserve"><value>Reconnect</value></data>
+
+  <!-- Settings: Controller -->
+  <data name="Settings_Controller_Title" xml:space="preserve"><value>Controller</value></data>
+  <data name="Settings_Controller_Caption" xml:space="preserve"><value>How the hardware sends input and what it shows.</value></data>
+  <data name="Settings_InputType" xml:space="preserve"><value>Input Type</value></data>
+  <data name="Settings_Input_Pot" xml:space="preserve"><value>Potentiometer (absolute)</value></data>
+  <data name="Settings_Input_Encoder" xml:space="preserve"><value>Rotary Encoder (relative)</value></data>
+  <data name="Settings_KnobCount" xml:space="preserve"><value>Number of knobs</value></data>
+  <data name="Settings_StepPerTick" xml:space="preserve"><value>Step per tick (%)</value></data>
+  <data name="Settings_IdleTimeout" xml:space="preserve"><value>Idle screen timeout (seconds)</value></data>
+  <data name="Settings_IdleTimeout_Desc" xml:space="preserve"><value>How long with no knob activity before the controller shows its idle screen.</value></data>
+  <data name="Settings_ShowPercent" xml:space="preserve"><value>Show % sign on device</value></data>
+
+  <!-- Settings: Audio Sessions -->
+  <data name="Settings_Audio_Title" xml:space="preserve"><value>Audio Sessions</value></data>
+  <data name="Settings_Audio_Caption" xml:space="preserve"><value>Choose which apps appear when mapping knobs.</value></data>
+  <data name="Settings_RefreshInterval" xml:space="preserve"><value>Refresh interval (seconds)</value></data>
+  <data name="Settings_Visible" xml:space="preserve"><value>Visible</value></data>
+  <data name="Settings_Visible_Desc" xml:space="preserve"><value>Tap Hide to exclude an app from knob pickers.</value></data>
+  <data name="Settings_Hidden" xml:space="preserve"><value>Hidden</value></data>
+  <data name="Settings_Hidden_Desc" xml:space="preserve"><value>Tap Show to restore an app.</value></data>
+
+  <!-- Settings: Diagnostics -->
+  <data name="Settings_Diagnostics_Title" xml:space="preserve"><value>Diagnostics</value></data>
+  <data name="Settings_Diagnostics_Caption" xml:space="preserve"><value>Inspect the raw stream from the controller.</value></data>
+  <data name="Settings_DebugSerial" xml:space="preserve"><value>Debug serial events</value></data>
+
+  <!-- Output page -->
+  <data name="Output_Title" xml:space="preserve"><value>Audio Output</value></data>
+  <data name="Output_Caption" xml:space="preserve"><value>The hardware switch flips Windows audio between these two devices.</value></data>
+  <data name="Output_SwitchPosition" xml:space="preserve"><value>Switch position</value></data>
+  <data name="Output_PosA_Active" xml:space="preserve"><value>Position A · active</value></data>
+  <data name="Output_PosA" xml:space="preserve"><value>Position A</value></data>
+  <data name="Output_PosB_Active" xml:space="preserve"><value>Position B · active</value></data>
+  <data name="Output_PosB" xml:space="preserve"><value>Position B</value></data>
+  <data name="Output_AssignHint" xml:space="preserve"><value>Assign a playback device to each position</value></data>
+  <data name="Output_SelectDevice" xml:space="preserve"><value>Select a device</value></data>
+  <data name="Output_ManualHint" xml:space="preserve"><value>No switch yet? Tap a position card above to route output manually.</value></data>
+
+  <!-- Idle screen page -->
+  <data name="Idle_Title" xml:space="preserve"><value>Idle Screen</value></data>
+  <data name="Idle_Upload" xml:space="preserve"><value>Upload GIF</value></data>
+  <data name="Idle_Caption" xml:space="preserve"><value>What your controller shows when nothing's playing</value></data>
+  <data name="Idle_Selected" xml:space="preserve"><value>Selected</value></data>
+  <data name="Idle_EmptyTitle" xml:space="preserve"><value>No idle GIF selected</value></data>
+  <data name="Idle_EmptyDesc" xml:space="preserve"><value>Upload a GIF and pick it to use as your idle screen.</value></data>
+  <data name="Idle_SetActive_Tip" xml:space="preserve"><value>Set as idle screen</value></data>
+  <data name="Idle_Delete_Tip" xml:space="preserve"><value>Delete</value></data>
+
+  <!-- Knob card -->
+  <data name="Knob_Offline" xml:space="preserve"><value>⚡ offline</value></data>
+  <data name="Knob_Offline_Tip" xml:space="preserve"><value>Board disconnected — config saved, will sync on reconnect</value></data>
+  <data name="Knob_NotRunning" xml:space="preserve"><value>● not running</value></data>
+  <data name="Knob_NotRunning_Tip" xml:space="preserve"><value>App isn't running — its volume can't be controlled until it's launched</value></data>
+
+  <!-- App picker dialog -->
+  <data name="AppPicker_Title" xml:space="preserve"><value>Select App</value></data>
+  <data name="AppPicker_Select" xml:space="preserve"><value>Select</value></data>
+  <data name="AppPicker_Remove" xml:space="preserve"><value>Remove Channel</value></data>
+  <data name="AppPicker_Knob" xml:space="preserve"><value>Knob</value></data>
+  <data name="AppPicker_App" xml:space="preserve"><value>App</value></data>
+
+  <!-- Serial status (code) -->
+  <data name="Serial_NotConnected" xml:space="preserve"><value>Not connected</value></data>
+  <data name="Serial_Connected" xml:space="preserve"><value>✅ Connected to {0} @ {1}</value></data>
+  <data name="Serial_Disconnected" xml:space="preserve"><value>Disconnected: {0}</value></data>
+
+  <!-- Channel / display (code) -->
+  <data name="Knob_Label" xml:space="preserve"><value>Knob {0}</value></data>
+  <data name="System_DisplayName" xml:space="preserve"><value>System</value></data>
+  <data name="Hide_Blocked" xml:space="preserve"><value>Can't hide '{0}' — it's assigned to {1}. Unassign it first.</value></data>
+
+  <!-- Output (code) -->
+  <data name="Output_NotAssigned" xml:space="preserve"><value>Not assigned</value></data>
+  <data name="Output_AssignFirst" xml:space="preserve"><value>Assign a device to position {0} first.</value></data>
+  <data name="Output_Switched" xml:space="preserve"><value>Output → {0}</value></data>
+  <data name="Output_SwitchFailed" xml:space="preserve"><value>Couldn't switch to {0} — it may be disconnected.</value></data>
+
+  <!-- Idle screen (code) -->
+  <data name="Idle_SavedOffline" xml:space="preserve"><value>Saved. Connect the controller, then select this GIF again to send it.</value></data>
+  <data name="Idle_Sending" xml:space="preserve"><value>Sending "{0}" to controller…</value></data>
+  <data name="Idle_ActiveOnController" xml:space="preserve"><value>Active on controller</value></data>
+  <data name="Idle_Usage_One" xml:space="preserve"><value>1 GIF · {0}</value></data>
+  <data name="Idle_Usage_Many" xml:space="preserve"><value>{0} GIFs · {1}</value></data>
+  <data name="Idle_Delete_Title" xml:space="preserve"><value>Delete GIF</value></data>
+  <data name="Idle_Delete_Content" xml:space="preserve"><value>Remove "{0}" from your idle-screen library?</value></data>
+
+  <!-- Close / tray (code) -->
+  <data name="Close_Title" xml:space="preserve"><value>Close Audio Mixer</value></data>
+  <data name="Close_Content" xml:space="preserve"><value>Do you want to close the app or minimize it to the system tray?</value></data>
+  <data name="Close_Primary" xml:space="preserve"><value>Close</value></data>
+  <data name="Close_Secondary" xml:space="preserve"><value>Minimize to Tray</value></data>
+  <data name="Tray_Open" xml:space="preserve"><value>Open Audio Mixer</value></data>
+  <data name="Tray_Quit" xml:space="preserve"><value>Quit</value></data>
+
+  <!-- GIF upload errors (code) -->
+  <data name="Gif_NotConnected" xml:space="preserve"><value>Controller is not connected.</value></data>
+  <data name="Gif_MissingCache" xml:space="preserve"><value>The GIF file is missing from the library cache.</value></data>
+  <data name="Gif_NoFrames" xml:space="preserve"><value>The GIF has no frames to send.</value></data>
+  <data name="Gif_NoResponse_Cable" xml:space="preserve"><value>No response from the controller. Check the cable and that the firmware baud rate matches (921600).</value></data>
+  <data name="Gif_NoResponse_Conn" xml:space="preserve"><value>No response from the controller. Check the connection and that the firmware baud rate matches (921600).</value></data>
+  <data name="Gif_Rejected_Partition" xml:space="preserve"><value>The controller rejected the upload — its firmware may have no storage partition. Flash a partition scheme that includes a filesystem (e.g. "Default 4MB with spiffs").</value></data>
+  <data name="Gif_NoStorage" xml:space="preserve"><value>The controller has no free storage for a GIF. Flash a partition scheme with more filesystem space.</value></data>
+  <data name="Gif_Unexpected" xml:space="preserve"><value>Unexpected controller response: {0}</value></data>
+  <data name="Gif_TimedOut" xml:space="preserve"><value>The controller stopped responding during transfer (timed out).</value></data>
+  <data name="Gif_TransferError" xml:space="preserve"><value>The controller reported an error during transfer — its storage may be full.</value></data>
+  <data name="Gif_BeforeConfirm" xml:space="preserve"><value>The controller stopped responding before confirming the upload.</value></data>
+  <data name="Gif_Verify" xml:space="preserve"><value>The upload did not verify on the controller (size mismatch or storage full).</value></data>
+  <data name="Gif_WriteFailed" xml:space="preserve"><value>Serial write failed: {0}</value></data>
+</root>

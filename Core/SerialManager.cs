@@ -197,9 +197,9 @@ public class SerialManager
     public async Task UploadIdleGifAsync(EncodedGif gif, IProgress<double>? progress, CancellationToken ct = default)
     {
         if (!_port.IsOpen)
-            throw new IdleGifUploadException("Controller is not connected.");
+            throw new IdleGifUploadException(Loc.Get("Gif_NotConnected"));
         if (gif.Frames.Count == 0)
-            throw new IdleGifUploadException("The GIF has no frames to send.");
+            throw new IdleGifUploadException(Loc.Get("Gif_NoFrames"));
 
         DrainGifResponses();
 
@@ -208,13 +208,11 @@ public class SerialManager
 
         var rdy = await ReadGifResponseAsync(TimeSpan.FromSeconds(5), ct).ConfigureAwait(false);
         if (rdy == null)
-            throw new IdleGifUploadException(
-                "No response from the controller. Check the cable and that the firmware baud rate matches (921600).");
+            throw new IdleGifUploadException(Loc.Get("Gif_NoResponse_Cable"));
         if (rdy == "gif:err")
-            throw new IdleGifUploadException(
-                "The controller rejected the upload — its firmware may have no storage partition. Flash a partition scheme that includes a filesystem (e.g. \"Default 4MB with spiffs\").");
+            throw new IdleGifUploadException(Loc.Get("Gif_Rejected_Partition"));
         if (rdy != "gif:rdy")
-            throw new IdleGifUploadException($"Unexpected controller response: {rdy}");
+            throw new IdleGifUploadException(Loc.Get("Gif_Unexpected", rdy));
 
         long totalBytes = gif.PixelByteCount;
         long sentBytes = 0;
@@ -228,11 +226,11 @@ public class SerialManager
             WriteOrThrow("gif:d:" + b64);
             var ack = await ReadGifResponseAsync(TimeSpan.FromSeconds(8), ct).ConfigureAwait(false);
             if (ack == null)
-                throw new IdleGifUploadException("The controller stopped responding during transfer (timed out).");
+                throw new IdleGifUploadException(Loc.Get("Gif_TimedOut"));
             if (ack == "gif:err")
-                throw new IdleGifUploadException("The controller reported an error during transfer — its storage may be full.");
+                throw new IdleGifUploadException(Loc.Get("Gif_TransferError"));
             if (ack != "gif:ack")
-                throw new IdleGifUploadException($"Unexpected controller response: {ack}");
+                throw new IdleGifUploadException(Loc.Get("Gif_Unexpected", ack));
             sentBytes += chunkFill;
             chunkFill = 0;
             progress?.Report(totalBytes > 0 ? (double)sentBytes / totalBytes : 1);
@@ -257,15 +255,15 @@ public class SerialManager
         WriteOrThrow("gif:end");
         var done = await ReadGifResponseAsync(TimeSpan.FromSeconds(10), ct).ConfigureAwait(false);
         if (done == null)
-            throw new IdleGifUploadException("The controller stopped responding before confirming the upload.");
+            throw new IdleGifUploadException(Loc.Get("Gif_BeforeConfirm"));
         if (done != "gif:done")
-            throw new IdleGifUploadException("The upload did not verify on the controller (size mismatch or storage full).");
+            throw new IdleGifUploadException(Loc.Get("Gif_Verify"));
     }
 
     private void WriteOrThrow(string line)
     {
         try { _port.WriteLine(line); }
-        catch (Exception ex) { throw new IdleGifUploadException($"Serial write failed: {ex.Message}"); }
+        catch (Exception ex) { throw new IdleGifUploadException(Loc.Get("Gif_WriteFailed", ex.Message)); }
     }
 
     /// <summary>Removes the stored idle GIF so the controller reverts to its built-in animation.</summary>

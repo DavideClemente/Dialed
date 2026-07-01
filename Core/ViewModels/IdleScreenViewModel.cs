@@ -112,7 +112,7 @@ public partial class IdleScreenViewModel : ObservableObject
         var size = bytes >= 1024 * 1024
             ? $"{bytes / (1024.0 * 1024.0):0.0} MB"
             : $"{bytes / 1024.0:0} KB";
-        UsageText = count == 1 ? $"1 GIF · {size}" : $"{count} GIFs · {size}";
+        UsageText = count == 1 ? Loc.Get("Idle_Usage_One", size) : Loc.Get("Idle_Usage_Many", count, size);
     }
 
     [RelayCommand]
@@ -158,7 +158,7 @@ public partial class IdleScreenViewModel : ObservableObject
         if (!_isConnected())
         {
             UploadProgress = 0;
-            UploadStatus = "Saved. Connect the controller, then select this GIF again to send it.";
+            UploadStatus = Loc.Get("Idle_SavedOffline");
             return;
         }
 
@@ -168,13 +168,13 @@ public partial class IdleScreenViewModel : ObservableObject
 
         IsUploading = true;
         UploadProgress = 0;
-        UploadStatus = $"Sending \"{gif.OriginalName}\" to controller…";
+        UploadStatus = Loc.Get("Idle_Sending", gif.OriginalName);
 
         try
         {
             var progress = new Progress<double>(p => UploadProgress = p);
             await _pushGif(gif.Config, progress, cts.Token);
-            UploadStatus = "Active on controller";
+            UploadStatus = Loc.Get("Idle_ActiveOnController");
         }
         catch (OperationCanceledException)
         {
@@ -206,10 +206,10 @@ public partial class IdleScreenViewModel : ObservableObject
 
         var dialog = new ContentDialog
         {
-            Title = "Delete GIF",
-            Content = $"Remove \"{gif.OriginalName}\" from your idle-screen library?",
-            PrimaryButtonText = "Delete",
-            CloseButtonText = "Cancel",
+            Title = Loc.Get("Idle_Delete_Title"),
+            Content = Loc.Get("Idle_Delete_Content", gif.OriginalName),
+            PrimaryButtonText = Loc.Get("Common_Delete"),
+            CloseButtonText = Loc.Get("Common_Cancel"),
             DefaultButton = ContentDialogButton.Close,
             XamlRoot = xamlRoot,
         };

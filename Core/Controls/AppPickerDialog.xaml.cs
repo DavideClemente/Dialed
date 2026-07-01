@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using AudioMixerWin.Core.Models;
+using AudioMixerWin.Core.Services;
 using AudioMixerWin.Core.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -33,7 +34,7 @@ public sealed partial class AppPickerDialog : ContentDialog
         _channel = channel;
         SelectableSessions = new ObservableCollection<AudioSession>(_channel.GetSelectableSessions());
         KnobOptions = _channel.GetSelectableKnobIndices()
-            .Select(i => new KnobOption { Index = i, Label = $"Knob {i + 1}" })
+            .Select(i => new KnobOption { Index = i, Label = Loc.Get("Knob_Label", i + 1) })
             .ToList();
         InitializeComponent();
 

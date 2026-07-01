@@ -2,6 +2,7 @@
     x:Class="AudioMixerWin.Core.Controls.KnobCard"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:loc="using:AudioMixerWin.Core.Services"
     PointerPressed="OnPointerPressed"
     PointerMoved="OnPointerMoved"
     PointerReleased="OnPointerReleased"
@@ -79,18 +80,18 @@
                                 </Border>
                                 <Border Background="#1A1400" CornerRadius="4" Padding="5,2"
                                         Visibility="{x:Bind ConvertDisconnectedToVisibility(Channel.IsSerialConnected), Mode=OneWay}"
-                                        ToolTipService.ToolTip="Board disconnected — config saved, will sync on reconnect">
+                                        ToolTipService.ToolTip="{loc:Loc Key=Knob_Offline_Tip}">
                                     <TextBlock
-                                        Text="⚡ offline"
+                                        Text="{loc:Loc Key=Knob_Offline}"
                                         FontSize="9"
                                         FontFamily="Cascadia Code, Consolas"
                                         Foreground="#B89530"/>
                                 </Border>
                                 <Border Background="#1A1414" CornerRadius="4" Padding="5,2"
                                         Visibility="{x:Bind ConvertOfflineToVisibility(Channel.IsOffline), Mode=OneWay}"
-                                        ToolTipService.ToolTip="App isn't running — its volume can't be controlled until it's launched">
+                                        ToolTipService.ToolTip="{loc:Loc Key=Knob_NotRunning_Tip}">
                                     <TextBlock
-                                        Text="● not running"
+                                        Text="{loc:Loc Key=Knob_NotRunning}"
                                         FontSize="9"
                                         FontFamily="Cascadia Code, Consolas"
                                         Foreground="#C06060"/>

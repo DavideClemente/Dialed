@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:AudioMixerWin.Core.ViewModels"
+    xmlns:loc="using:AudioMixerWin.Core.Services"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
@@ -24,15 +25,15 @@
         <StackPanel Padding="24" Spacing="16">
 
             <Grid>
-                <TextBlock Text="Idle Screen" FontSize="20" FontWeight="SemiBold"
+                <TextBlock Text="{loc:Loc Key=Idle_Title}" FontSize="20" FontWeight="SemiBold"
                            FontFamily="Segoe UI Variable Display" Foreground="#E0E0E0"
                            VerticalAlignment="Center" />
-                <Button Content="Upload GIF" HorizontalAlignment="Right"
+                <Button Content="{loc:Loc Key=Idle_Upload}" HorizontalAlignment="Right"
                         Command="{x:Bind ViewModel.AddGifsCommand}"
                         BorderThickness="1" CornerRadius="8" />
             </Grid>
 
-            <TextBlock Text="What your controller shows when nothing's playing"
+            <TextBlock Text="{loc:Loc Key=Idle_Caption}"
                        Foreground="#808080" FontSize="12" Margin="0,-8,0,0" />
 
             <!-- Hero: selected GIF -->
@@ -48,7 +49,7 @@
                     <StackPanel VerticalAlignment="Center" Spacing="6">
                         <Border Background="#163327" CornerRadius="20" Padding="9,3"
                                 HorizontalAlignment="Left">
-                            <TextBlock Text="Selected" Foreground="#8FE0BE" FontSize="11" />
+                            <TextBlock Text="{loc:Loc Key=Idle_Selected}" Foreground="#8FE0BE" FontSize="11" />
                         </Border>
                         <TextBlock Text="{x:Bind ViewModel.SelectedGif.OriginalName, Mode=OneWay}"
                                    Foreground="#F2F2F2" FontSize="15" FontWeight="SemiBold" />
@@ -74,9 +75,9 @@
                     Visibility="{x:Bind ViewModel.SelectedGif, Mode=OneWay,
                                  Converter={StaticResource NullToVisible}}">
                 <StackPanel HorizontalAlignment="Center" Spacing="6">
-                    <TextBlock Text="No idle GIF selected" Foreground="#C8C8C8"
+                    <TextBlock Text="{loc:Loc Key=Idle_EmptyTitle}" Foreground="#C8C8C8"
                                FontSize="14" HorizontalAlignment="Center" />
-                    <TextBlock Text="Upload a GIF and pick it to use as your idle screen."
+                    <TextBlock Text="{loc:Loc Key=Idle_EmptyDesc}"
                                Foreground="#808080" FontSize="12" HorizontalAlignment="Center" />
                 </StackPanel>
             </Border>
@@ -112,12 +113,12 @@
                                            VerticalAlignment="Center" />
                                 <Button Grid.Column="1" Padding="6" CornerRadius="6"
                                         Tag="{x:Bind}" Click="OnSetActiveClick"
-                                        ToolTipService.ToolTip="Set as idle screen">
+                                        ToolTipService.ToolTip="{loc:Loc Key=Idle_SetActive_Tip}">
                                     <FontIcon Glyph="&#xE73E;" FontSize="12" />
                                 </Button>
                                 <Button Grid.Column="2" Padding="6" CornerRadius="6"
                                         Tag="{x:Bind}" Click="OnDeleteClick"
-                                        ToolTipService.ToolTip="Delete">
+                                        ToolTipService.ToolTip="{loc:Loc Key=Idle_Delete_Tip}">
                                     <FontIcon Glyph="&#xE74D;" FontSize="12" />
                                 </Button>
                             </Grid>

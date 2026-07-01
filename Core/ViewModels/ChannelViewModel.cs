@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
 using AudioMixerWin.Core.Models;
+using AudioMixerWin.Core.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml.Media;
@@ -24,7 +25,7 @@ public partial class ChannelViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(KnobLabel))]
     private int knobIndex;
 
-    public string KnobLabel => $"Knob {KnobIndex + 1}";
+    public string KnobLabel => Loc.Get("Knob_Label", KnobIndex + 1);
 
     public ObservableCollection<AudioSession> AvailableSessions { get; }
 
@@ -60,7 +61,10 @@ public partial class ChannelViewModel : ObservableObject
     [ObservableProperty]
     private bool isSerialConnected;
 
-    public string DisplayName => AudioManager.GetDisplayName(AppName);
+    public string DisplayName =>
+        AppName.Equals(UnassignedAppName, StringComparison.OrdinalIgnoreCase)
+            ? Loc.Get("AppPicker_Title")
+            : AudioManager.GetDisplayName(AppName);
 
     public ChannelViewModel(
         int knobIndex,

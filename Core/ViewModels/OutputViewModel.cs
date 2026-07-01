@@ -47,8 +47,8 @@ public partial class OutputViewModel : ObservableObject
     public bool IsAActive => ActivePosition == OutputPosition.A;
     public bool IsBActive => ActivePosition == OutputPosition.B;
 
-    public string ADeviceName => SelectedDeviceA?.Name ?? "Not assigned";
-    public string BDeviceName => SelectedDeviceB?.Name ?? "Not assigned";
+    public string ADeviceName => SelectedDeviceA?.Name ?? Loc.Get("Output_NotAssigned");
+    public string BDeviceName => SelectedDeviceB?.Name ?? Loc.Get("Output_NotAssigned");
 
     // Pick the glyph from the assigned device's name rather than the position, so a
     // headphone endpoint always shows the headphone icon whichever slot it's in.
@@ -209,18 +209,18 @@ public partial class OutputViewModel : ObservableObject
 
         if (device is null)
         {
-            StatusText = $"Assign a device to position {label} first.";
+            StatusText = Loc.Get("Output_AssignFirst", label);
             return;
         }
 
         if (_output.SetDefault(device.Id))
         {
             ActivePosition = position;
-            StatusText = $"Output → {device.Name}";
+            StatusText = Loc.Get("Output_Switched", device.Name);
         }
         else
         {
-            StatusText = $"Couldn't switch to {device.Name} — it may be disconnected.";
+            StatusText = Loc.Get("Output_SwitchFailed", device.Name);
         }
 
         RefreshDefaults();

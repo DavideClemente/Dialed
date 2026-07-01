@@ -5,6 +5,10 @@ namespace AudioMixerWin.Core.Services;
 
 public class AppSettings
 {
+    // BCP-47 language tag that overrides the app's UI language (framework strings
+    // and .NET exception messages). Empty means "follow the Windows default".
+    public string Language { get; set; } = "";
+
     public string ComPort { get; set; } = "COM3";
     public int BaudRate { get; set; } = 921600;
     public int RefreshIntervalSeconds { get; set; } = 2;

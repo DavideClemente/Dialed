@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:AudioMixerWin"
+    xmlns:loc="using:AudioMixerWin.Core.Services"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
@@ -16,17 +17,17 @@
             SelectionChanged="OnNavSelectionChanged">
 
             <NavigationView.MenuItems>
-                <NavigationViewItem Content="Mixer" Tag="mixer" IsSelected="True">
+                <NavigationViewItem Content="{loc:Loc Key=Nav_Mixer}" Tag="mixer" IsSelected="True">
                     <NavigationViewItem.Icon>
                         <SymbolIcon Symbol="Volume" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem Content="Idle Screen" Tag="idle">
+                <NavigationViewItem Content="{loc:Loc Key=Nav_IdleScreen}" Tag="idle">
                     <NavigationViewItem.Icon>
                         <SymbolIcon Symbol="Pictures" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem Content="Output" Tag="output">
+                <NavigationViewItem Content="{loc:Loc Key=Nav_Output}" Tag="output">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE7F5;" />
                     </NavigationViewItem.Icon>

@@ -20,7 +20,7 @@ public class AudioManager
         public static string GetDisplayName(string processName)
         {
             if (processName.Equals(MasterVolumeProcessName, StringComparison.OrdinalIgnoreCase))
-                return "System";
+                return Loc.Get("System_DisplayName");
 
             return processName.Length > 0
                 ? char.ToUpperInvariant(processName[0]) + processName[1..]

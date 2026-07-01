@@ -36,7 +36,7 @@ public partial class MainViewModel : ObservableObject
     private int baudRate;
 
     [ObservableProperty]
-    private string serialStatus = "Not connected";
+    private string serialStatus = Loc.Get("Serial_NotConnected");
 
     [ObservableProperty]
     private double refreshIntervalSeconds;
@@ -61,6 +61,14 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private bool showPercentSign;
+
+    [ObservableProperty]
+    private string language;
+
+    [ObservableProperty]
+    private bool languageRestartPending;
+
+    public IReadOnlyList<LanguageOption> LanguageOptions => LocalizationService.Options;
 
     [ObservableProperty]
     private int draggedChannelIndex = -1;
@@ -99,6 +107,7 @@ public partial class MainViewModel : ObservableObject
         knobCount = _settings.KnobCount;
         debugSerialEvents = _settings.DebugSerialEvents;
         showPercentSign = _settings.ShowPercentSign;
+        language = _settings.Language;
 
         foreach (var process in _settings.ExcludedProcesses)
             HiddenProcesses.Add(process);
@@ -155,23 +164,21 @@ public partial class MainViewModel : ObservableObject
     public async Task PushIdleGifAsync(IdleGifConfig config, IProgress<double>? progress, CancellationToken ct)
     {
         if (!_serial.IsConnected)
-            throw new IdleGifUploadException("Controller is not connected.");
+            throw new IdleGifUploadException(Loc.Get("Gif_NotConnected"));
 
         var path = _idleGifLibrary.PathFor(config);
         if (!File.Exists(path))
-            throw new IdleGifUploadException("The GIF file is missing from the library cache.");
+            throw new IdleGifUploadException(Loc.Get("Gif_MissingCache"));
 
         long free = await _serial.QueryIdleGifSpaceAsync(ct);
         if (free < 0)
-            throw new IdleGifUploadException(
-                "No response from the controller. Check the connection and that the firmware baud rate matches (921600).");
+            throw new IdleGifUploadException(Loc.Get("Gif_NoResponse_Conn"));
 
         long frameBytes = (long)IdleGifTarget * IdleGifTarget * 2;
         long headerEstimate = 16 + 2L * IdleGifFrameCap; // magic+dims + delay table
         int byBudget = (int)((free - headerEstimate) / frameBytes);
         if (byBudget < 1)
-            throw new IdleGifUploadException(
-                "The controller has no free storage for a GIF. Flash a partition scheme with more filesystem space.");
+            throw new IdleGifUploadException(Loc.Get("Gif_NoStorage"));
 
         int cap = Math.Min(IdleGifFrameCap, byBudget);
 
@@ -192,11 +199,11 @@ public partial class MainViewModel : ObservableObject
         try
         {
             serial.Start();
-            SerialStatus = $"Connected to {ComPort} @ {BaudRate}";
+            SerialStatus = Loc.Get("Serial_Connected", ComPort, BaudRate);
         }
         catch (Exception ex)
         {
-            SerialStatus = $"Disconnected: {ex.Message}";
+            SerialStatus = Loc.Get("Serial_Disconnected", ex.Message);
         }
 
         UpdateChannelsSerialState(serial.IsConnected);
@@ -270,8 +277,14 @@ public partial class MainViewModel : ObservableObject
     {
         var color = _audioManager.GetIconColor(ch.AppName);
         var icon = _audioManager.GetIconRgb565(ch.AppName);
+        // Only push the label/color/icon — the device stores these silently and
+        // stays on its idle screen. Deliberately no SendVolume here: a "vol:" line
+        // makes the device switch to the volume screen (displayShowKnob), so echoing
+        // one on connect or on an assignment change would pop the volume screen
+        // without any physical interaction. The volume screen should appear only
+        // when the user actually turns a knob (handled locally on the device and
+        // echoed back via OnKnobChanged/OnKnobDelta).
         _serial.SendAssignment(ch.KnobIndex, ch.AppName, color, icon);
-        _serial.SendVolume(ch.KnobIndex, _audioManager.GetVolume(ch.AppName));
     }
 
     private void SyncAllChannels()
@@ -301,7 +314,7 @@ public partial class MainViewModel : ObservableObject
     {
         var assigned = ChannelViewModel.FindAssignedChannel(Channels, session.ProcessName);
         if (assigned is not null)
-            return $"Can't hide '{session.ProcessName}' — it's assigned to {assigned.KnobLabel}. Unassign it first.";
+            return Loc.Get("Hide_Blocked", session.ProcessName, assigned.KnobLabel);
 
         if (!_settings.ExcludedProcesses.Contains(session.ProcessName, StringComparer.OrdinalIgnoreCase))
             _settings.ExcludedProcesses.Add(session.ProcessName);
@@ -411,6 +424,15 @@ public partial class MainViewModel : ObservableObject
         _settings.ShowPercentSign = value;
         SettingsService.Save(_settings);
         _serial?.SendShowPercent(value);
+    }
+
+    partial void OnLanguageChanged(string value)
+    {
+        _settings.Language = value ?? "";
+        SettingsService.Save(_settings);
+        // PrimaryLanguageOverride only fully applies to freshly created UI, so
+        // surface a restart prompt rather than re-theming live.
+        LanguageRestartPending = true;
     }
 
     private void LogSerial(string message)
