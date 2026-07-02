@@ -13,53 +13,15 @@
     <Page.Resources>
         <converters:ProcessNameDisplayConverter x:Key="ProcessNameDisplay" />
 
-        <SolidColorBrush x:Key="ButtonBackground" Color="#1C1C1C"/>
-        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#282828"/>
-        <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#111111"/>
-        <SolidColorBrush x:Key="ButtonBorderBrush" Color="#383838"/>
-        <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#505050"/>
-        <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#282828"/>
-        <SolidColorBrush x:Key="ButtonForeground" Color="#C8C8C8"/>
-        <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#F0F0F0"/>
-        <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#A0A0A0"/>
-
-        <!-- Section title -->
-        <Style x:Key="SectionTitle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="20" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="FontFamily" Value="Segoe UI Variable Display" />
-            <Setter Property="Foreground" Value="#E0E0E0" />
-        </Style>
-
-        <!-- Section subtitle / helper -->
-        <Style x:Key="SectionCaption" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#808080" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="TextWrapping" Value="Wrap" />
+        <!-- Page-local aliases for the app-wide tokens (Themes/Tokens.xaml),
+             preserving the tighter caption-under-title spacing. -->
+        <Style x:Key="SectionTitle" TargetType="TextBlock" BasedOn="{StaticResource SectionTitleStyle}" />
+        <Style x:Key="SectionCaption" TargetType="TextBlock" BasedOn="{StaticResource SectionCaptionStyle}">
             <Setter Property="Margin" Value="0,-8,0,0" />
         </Style>
-
-        <!-- Field label inside a card -->
-        <Style x:Key="FieldLabel" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#9A9A9A" />
-            <Setter Property="FontSize" Value="12" />
-        </Style>
-
-        <!-- Inline helper text under a field -->
-        <Style x:Key="FieldHelp" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#6E6E6E" />
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="TextWrapping" Value="Wrap" />
-        </Style>
-
-        <!-- Card container -->
-        <Style x:Key="Card" TargetType="Border">
-            <Setter Property="Background" Value="#121212" />
-            <Setter Property="BorderBrush" Value="#242424" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="10" />
-            <Setter Property="Padding" Value="18" />
-        </Style>
+        <Style x:Key="FieldLabel" TargetType="TextBlock" BasedOn="{StaticResource FieldLabelStyle}" />
+        <Style x:Key="FieldHelp" TargetType="TextBlock" BasedOn="{StaticResource FieldHelpStyle}" />
+        <Style x:Key="Card" TargetType="Border" BasedOn="{StaticResource CardStyle}" />
     </Page.Resources>
 
     <ScrollViewer>
@@ -86,6 +48,16 @@
                     <InfoBar Severity="Informational" IsClosable="False"
                              IsOpen="{x:Bind ViewModel.LanguageRestartPending, Mode=OneWay}"
                              Message="{loc:Loc Key=Settings_Language_Restart}" />
+
+                    <Border Style="{StaticResource CardDividerStyle}" />
+
+                    <StackPanel Spacing="6">
+                        <ToggleSwitch
+                            Header="{loc:Loc Key=Settings_StartWithWindows}"
+                            IsOn="{x:Bind ViewModel.StartWithWindows, Mode=TwoWay}" />
+                        <TextBlock Text="{loc:Loc Key=Settings_StartWithWindows_Desc}"
+                                   Style="{StaticResource FieldHelp}" Margin="0,-4,0,0" />
+                    </StackPanel>
                 </StackPanel>
             </Border>
 
@@ -106,10 +78,9 @@
                             <TextBlock Text="{loc:Loc Key=Settings_ComPort}" Style="{StaticResource FieldLabel}" />
                             <ComboBox
                                 x:Name="ComPortCombo"
-                                ItemsSource="{x:Bind PortInfos}"
                                 SelectedValuePath="Port"
-                                SelectedValue="{x:Bind ViewModel.ComPort, Mode=TwoWay}"
                                 DisplayMemberPath="DisplayText"
+                                SelectionChanged="OnComPortSelectionChanged"
                                 HorizontalAlignment="Stretch" />
                         </StackPanel>
 
@@ -127,6 +98,16 @@
                                 BorderThickness="1" CornerRadius="8" />
                         <TextBlock Text="{x:Bind ViewModel.SerialStatus, Mode=OneWay}"
                                    Opacity="0.7" VerticalAlignment="Center" TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <Border Style="{StaticResource CardDividerStyle}" />
+
+                    <StackPanel Spacing="6">
+                        <ToggleSwitch
+                            Header="{loc:Loc Key=Settings_AutoReconnect}"
+                            IsOn="{x:Bind ViewModel.AutoReconnect, Mode=TwoWay}" />
+                        <TextBlock Text="{loc:Loc Key=Settings_AutoReconnect_Desc}"
+                                   Style="{StaticResource FieldHelp}" Margin="0,-4,0,0" />
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -189,7 +170,7 @@
                             HorizontalAlignment="Stretch" />
                     </StackPanel>
 
-                    <Border Height="1" Background="#242424" Margin="0,2,0,0" />
+                    <Border Style="{StaticResource CardDividerStyle}" Margin="0,2,0,0" />
 
                     <ToggleSwitch
                         Header="{loc:Loc Key=Settings_ShowPercent}"
@@ -220,7 +201,7 @@
                         <TextBlock Text="{loc:Loc Key=Settings_Visible}" Style="{StaticResource FieldLabel}" />
                         <TextBlock Text="{loc:Loc Key=Settings_Visible_Desc}" Style="{StaticResource FieldHelp}" />
                         <ListView ItemsSource="{x:Bind ViewModel.AvailableSessions}" MaxHeight="200"
-                                  Background="#0E0E0E" CornerRadius="8" BorderBrush="#242424" BorderThickness="1">
+                                  Background="{StaticResource SurfaceBackgroundBrush}" CornerRadius="8" BorderBrush="{StaticResource StrokeDefaultBrush}" BorderThickness="1">
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="models:AudioSession">
                                     <Grid ColumnSpacing="8">
@@ -240,7 +221,7 @@
                         <TextBlock Text="{loc:Loc Key=Settings_Hidden}" Style="{StaticResource FieldLabel}" />
                         <TextBlock Text="{loc:Loc Key=Settings_Hidden_Desc}" Style="{StaticResource FieldHelp}" />
                         <ListView ItemsSource="{x:Bind ViewModel.HiddenProcesses}" MaxHeight="200"
-                                  Background="#0E0E0E" CornerRadius="8" BorderBrush="#242424" BorderThickness="1">
+                                  Background="{StaticResource SurfaceBackgroundBrush}" CornerRadius="8" BorderBrush="{StaticResource StrokeDefaultBrush}" BorderThickness="1">
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="x:String">
                                     <Grid ColumnSpacing="8">
@@ -274,9 +255,9 @@
                         ItemsSource="{x:Bind ViewModel.SerialLog}"
                         MaxHeight="200"
                         IsHitTestVisible="False"
-                        Background="#0E0E0E"
+                        Background="{StaticResource SurfaceBackgroundBrush}"
                         CornerRadius="8"
-                        BorderBrush="#242424"
+                        BorderBrush="{StaticResource StrokeDefaultBrush}"
                         BorderThickness="1"
                         FontFamily="Consolas"
                         FontSize="12">

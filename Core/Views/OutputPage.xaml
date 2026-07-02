@@ -8,150 +8,138 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Page.Resources>
-        <SolidColorBrush x:Key="ButtonBackground" Color="#121212"/>
-        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#181818"/>
-        <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#0E0E0E"/>
-        <SolidColorBrush x:Key="ButtonBorderBrush" Color="#242424"/>
-        <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#383838"/>
-        <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#1E1E1E"/>
-        <SolidColorBrush x:Key="ButtonForeground" Color="#E0E0E0"/>
-        <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#F0F0F0"/>
-        <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#A0A0A0"/>
-    </Page.Resources>
-
     <ScrollViewer>
-        <StackPanel Padding="24" Spacing="16">
+        <!-- Single capped column: content stretches (so the two position cards
+             split the width equally) but never grows past a readable width,
+             and stays left-aligned on wide windows. -->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MaxWidth="808" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0" Padding="24,20,24,24" Spacing="16">
 
-            <TextBlock Text="{loc:Loc Key=Output_Title}" FontSize="20" FontWeight="SemiBold"
-                       FontFamily="Segoe UI Variable Display" Foreground="#E0E0E0" />
+            <StackPanel Spacing="2" Margin="0,0,0,4">
+                <TextBlock Text="{loc:Loc Key=Output_Title}" Style="{StaticResource PageTitleStyle}" />
+                <TextBlock Text="{loc:Loc Key=Output_Caption}" Style="{StaticResource SectionCaptionStyle}" />
+            </StackPanel>
 
-            <TextBlock Text="{loc:Loc Key=Output_Caption}"
-                       Foreground="#808080" FontSize="12" Margin="0,-8,0,0" />
-
-            <!-- Switch position hero: two tappable cards (manual override) -->
-            <Border Background="#121212" BorderBrush="#242424" BorderThickness="1"
-                    CornerRadius="10" Padding="18">
-                <StackPanel Spacing="14">
-                    <TextBlock Text="{loc:Loc Key=Output_SwitchPosition}" Foreground="#6E6E6E" FontSize="11" />
-                    <Grid ColumnSpacing="14">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Position A -->
-                        <Button Grid.Column="0" HorizontalAlignment="Stretch"
-                                HorizontalContentAlignment="Stretch" Padding="14"
-                                CornerRadius="9" Background="#141414"
-                                Command="{x:Bind ViewModel.ActivateACommand}"
-                                BorderBrush="{x:Bind ViewModel.IsAActive, Mode=OneWay,
-                                              Converter={StaticResource SelectedToBorderBrush}}"
-                                BorderThickness="{x:Bind ViewModel.IsAActive, Mode=OneWay,
-                                              Converter={StaticResource SelectedToBorderThickness}}">
-                            <StackPanel Spacing="10">
-                                <Grid>
-                                    <Border Background="#0F1A15" CornerRadius="20" Padding="8,3"
-                                            HorizontalAlignment="Left"
-                                            Visibility="{x:Bind ViewModel.IsAActive, Mode=OneWay,
-                                                         Converter={StaticResource BoolToVisible}}">
-                                        <TextBlock Text="{loc:Loc Key=Output_PosA_Active}" Foreground="#8FE0BE" FontSize="11" />
-                                    </Border>
-                                    <TextBlock Text="{loc:Loc Key=Output_PosA}" Foreground="#888" FontSize="11"
-                                               HorizontalAlignment="Left"
-                                               Visibility="{x:Bind ViewModel.IsAActive, Mode=OneWay,
-                                                            Converter={StaticResource InverseBoolToVisible}}" />
-                                    <FontIcon Glyph="{x:Bind ViewModel.AIconGlyph, Mode=OneWay}"
-                                              FontSize="18" HorizontalAlignment="Right"
-                                              Foreground="#9A9A9A" />
-                                </Grid>
-                                <TextBlock Text="{x:Bind ViewModel.ADeviceName, Mode=OneWay}"
-                                           Foreground="#F2F2F2" FontSize="15" FontWeight="SemiBold"
-                                           TextTrimming="CharacterEllipsis" />
-                            </StackPanel>
-                        </Button>
-
-                        <FontIcon Grid.Column="1" Glyph="&#xE8AB;" FontSize="20"
-                                  Foreground="#4A4A4A" VerticalAlignment="Center" />
-
-                        <!-- Position B -->
-                        <Button Grid.Column="2" HorizontalAlignment="Stretch"
-                                HorizontalContentAlignment="Stretch" Padding="14"
-                                CornerRadius="9" Background="#141414"
-                                Command="{x:Bind ViewModel.ActivateBCommand}"
-                                BorderBrush="{x:Bind ViewModel.IsBActive, Mode=OneWay,
-                                              Converter={StaticResource SelectedToBorderBrush}}"
-                                BorderThickness="{x:Bind ViewModel.IsBActive, Mode=OneWay,
-                                              Converter={StaticResource SelectedToBorderThickness}}">
-                            <StackPanel Spacing="10">
-                                <Grid>
-                                    <Border Background="#0F1A15" CornerRadius="20" Padding="8,3"
-                                            HorizontalAlignment="Left"
-                                            Visibility="{x:Bind ViewModel.IsBActive, Mode=OneWay,
-                                                         Converter={StaticResource BoolToVisible}}">
-                                        <TextBlock Text="{loc:Loc Key=Output_PosB_Active}" Foreground="#8FE0BE" FontSize="11" />
-                                    </Border>
-                                    <TextBlock Text="{loc:Loc Key=Output_PosB}" Foreground="#888" FontSize="11"
-                                               HorizontalAlignment="Left"
-                                               Visibility="{x:Bind ViewModel.IsBActive, Mode=OneWay,
-                                                            Converter={StaticResource InverseBoolToVisible}}" />
-                                    <FontIcon Glyph="{x:Bind ViewModel.BIconGlyph, Mode=OneWay}"
-                                              FontSize="18" HorizontalAlignment="Right"
-                                              Foreground="#9A9A9A" />
-                                </Grid>
-                                <TextBlock Text="{x:Bind ViewModel.BDeviceName, Mode=OneWay}"
-                                           Foreground="#F2F2F2" FontSize="15" FontWeight="SemiBold"
-                                           TextTrimming="CharacterEllipsis" />
-                            </StackPanel>
-                        </Button>
-                    </Grid>
-
-                    <TextBlock Text="{x:Bind ViewModel.StatusText, Mode=OneWay}"
-                               Foreground="#9A9A9A" FontSize="12" TextWrapping="Wrap"
-                               Visibility="{x:Bind ViewModel.StatusText, Mode=OneWay,
-                                            Converter={StaticResource StringToVisible}}" />
-                </StackPanel>
-            </Border>
-
-            <TextBlock Text="{loc:Loc Key=Output_AssignHint}" Foreground="#6E6E6E"
-                       FontSize="11" Margin="0,4,0,0" />
-
+            <!-- The two switch positions, each with its own device picker -->
             <Grid ColumnSpacing="14">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <Border Grid.Column="0" Background="#121212" BorderBrush="#242424"
-                        BorderThickness="1" CornerRadius="9" Padding="14">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="{loc:Loc Key=Output_PosA}" Foreground="#9A9A9A" FontSize="12" />
-                        <ComboBox HorizontalAlignment="Stretch" PlaceholderText="{loc:Loc Key=Output_SelectDevice}"
+                <!-- Position A -->
+                <Border Grid.Column="0" Style="{StaticResource CardStyle}"
+                        BorderBrush="{x:Bind ViewModel.IsAActive, Mode=OneWay,
+                                      Converter={StaticResource SelectedToBorderBrush}}"
+                        BorderThickness="{x:Bind ViewModel.IsAActive, Mode=OneWay,
+                                      Converter={StaticResource SelectedToBorderThickness}}">
+                    <StackPanel Spacing="12">
+                        <Grid>
+                            <TextBlock Text="{loc:Loc Key=Output_PosA}"
+                                       Style="{StaticResource FieldLabelStyle}"
+                                       VerticalAlignment="Center" HorizontalAlignment="Left" />
+                            <FontIcon Glyph="{x:Bind ViewModel.AIconGlyph, Mode=OneWay}"
+                                      FontSize="18" HorizontalAlignment="Right"
+                                      Foreground="{StaticResource TextTertiaryBrush}" />
+                        </Grid>
+
+                        <ComboBox HorizontalAlignment="Stretch"
+                                  PlaceholderText="{loc:Loc Key=Output_SelectDevice}"
                                   ItemsSource="{x:Bind ViewModel.DevicesForA}"
                                   DisplayMemberPath="Name"
                                   SelectedItem="{x:Bind ViewModel.SelectedDeviceA, Mode=TwoWay}" />
+
+                        <Grid MinHeight="32">
+                            <Border Background="{StaticResource AccentSubtleBrush}"
+                                    BorderBrush="{StaticResource AccentStrokeBrush}" BorderThickness="1"
+                                    CornerRadius="20" Padding="10,4" HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    Visibility="{x:Bind ViewModel.IsAActive, Mode=OneWay,
+                                                 Converter={StaticResource BoolToVisible}}">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <Ellipse Width="7" Height="7" Fill="{StaticResource AccentBrush}"
+                                             VerticalAlignment="Center" />
+                                    <TextBlock Text="{loc:Loc Key=Output_Active}"
+                                               Foreground="{StaticResource AccentTextBrush}" FontSize="11" />
+                                </StackPanel>
+                            </Border>
+                            <Button Content="{loc:Loc Key=Output_SetActive}"
+                                    Command="{x:Bind ViewModel.ActivateACommand}"
+                                    FontSize="12" Padding="12,5" CornerRadius="8" BorderThickness="1"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center"
+                                    Visibility="{x:Bind ViewModel.IsAActive, Mode=OneWay,
+                                                 Converter={StaticResource InverseBoolToVisible}}" />
+                        </Grid>
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="1" Background="#121212" BorderBrush="#242424"
-                        BorderThickness="1" CornerRadius="9" Padding="14">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="{loc:Loc Key=Output_PosB}" Foreground="#9A9A9A" FontSize="12" />
-                        <ComboBox HorizontalAlignment="Stretch" PlaceholderText="{loc:Loc Key=Output_SelectDevice}"
+                <FontIcon Grid.Column="1" Glyph="&#xE8AB;" FontSize="20"
+                          Foreground="{StaticResource TextDisabledBrush}" VerticalAlignment="Center" />
+
+                <!-- Position B -->
+                <Border Grid.Column="2" Style="{StaticResource CardStyle}"
+                        BorderBrush="{x:Bind ViewModel.IsBActive, Mode=OneWay,
+                                      Converter={StaticResource SelectedToBorderBrush}}"
+                        BorderThickness="{x:Bind ViewModel.IsBActive, Mode=OneWay,
+                                      Converter={StaticResource SelectedToBorderThickness}}">
+                    <StackPanel Spacing="12">
+                        <Grid>
+                            <TextBlock Text="{loc:Loc Key=Output_PosB}"
+                                       Style="{StaticResource FieldLabelStyle}"
+                                       VerticalAlignment="Center" HorizontalAlignment="Left" />
+                            <FontIcon Glyph="{x:Bind ViewModel.BIconGlyph, Mode=OneWay}"
+                                      FontSize="18" HorizontalAlignment="Right"
+                                      Foreground="{StaticResource TextTertiaryBrush}" />
+                        </Grid>
+
+                        <ComboBox HorizontalAlignment="Stretch"
+                                  PlaceholderText="{loc:Loc Key=Output_SelectDevice}"
                                   ItemsSource="{x:Bind ViewModel.DevicesForB}"
                                   DisplayMemberPath="Name"
                                   SelectedItem="{x:Bind ViewModel.SelectedDeviceB, Mode=TwoWay}" />
+
+                        <Grid MinHeight="32">
+                            <Border Background="{StaticResource AccentSubtleBrush}"
+                                    BorderBrush="{StaticResource AccentStrokeBrush}" BorderThickness="1"
+                                    CornerRadius="20" Padding="10,4" HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    Visibility="{x:Bind ViewModel.IsBActive, Mode=OneWay,
+                                                 Converter={StaticResource BoolToVisible}}">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <Ellipse Width="7" Height="7" Fill="{StaticResource AccentBrush}"
+                                             VerticalAlignment="Center" />
+                                    <TextBlock Text="{loc:Loc Key=Output_Active}"
+                                               Foreground="{StaticResource AccentTextBrush}" FontSize="11" />
+                                </StackPanel>
+                            </Border>
+                            <Button Content="{loc:Loc Key=Output_SetActive}"
+                                    Command="{x:Bind ViewModel.ActivateBCommand}"
+                                    FontSize="12" Padding="12,5" CornerRadius="8" BorderThickness="1"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center"
+                                    Visibility="{x:Bind ViewModel.IsBActive, Mode=OneWay,
+                                                 Converter={StaticResource InverseBoolToVisible}}" />
+                        </Grid>
                     </StackPanel>
                 </Border>
             </Grid>
 
-            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
-                <FontIcon Glyph="&#xE946;" FontSize="13" Foreground="#6E6E6E" />
+            <TextBlock Text="{x:Bind ViewModel.StatusText, Mode=OneWay}"
+                       Foreground="{StaticResource TextTertiaryBrush}" FontSize="12" TextWrapping="Wrap"
+                       Visibility="{x:Bind ViewModel.StatusText, Mode=OneWay,
+                                    Converter={StaticResource StringToVisible}}" />
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <FontIcon Glyph="&#xE946;" FontSize="13" Foreground="{StaticResource TextDisabledBrush}" />
                 <TextBlock Text="{loc:Loc Key=Output_ManualHint}"
-                           Foreground="#6E6E6E" FontSize="11" VerticalAlignment="Center" />
+                           Style="{StaticResource FieldHelpStyle}" VerticalAlignment="Center" />
             </StackPanel>
 
         </StackPanel>
+        </Grid>
     </ScrollViewer>
 </Page>

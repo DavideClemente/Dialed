@@ -55,6 +55,17 @@ public partial class ChannelViewModel : ObservableObject
     [ObservableProperty]
     private ImageSource? iconSource;
 
+    /// <summary>
+    /// The app's dominant icon color (same one pushed to the hardware display),
+    /// used to tint the card's icon container and slider fill.
+    /// </summary>
+    [ObservableProperty]
+    private Windows.UI.Color accentColor = NeutralAccent;
+
+    // Unassigned channels get a quiet gray; the master channel gets the brand mint.
+    private static readonly Windows.UI.Color NeutralAccent = Windows.UI.Color.FromArgb(255, 0x8A, 0x8A, 0x92);
+    private static readonly Windows.UI.Color MasterAccent = Windows.UI.Color.FromArgb(255, 0x34, 0xD3, 0x99);
+
     [ObservableProperty]
     private bool isMuted;
 
@@ -93,7 +104,19 @@ public partial class ChannelViewModel : ObservableObject
 
         AvailableSessions.CollectionChanged += OnAvailableSessionsChanged;
         IconSource = GetSessionIcon(appName);
+        AccentColor = ComputeAccent(appName);
         UpdateRunningState();
+    }
+
+    private Windows.UI.Color ComputeAccent(string appName)
+    {
+        if (appName.Equals(UnassignedAppName, StringComparison.OrdinalIgnoreCase))
+            return NeutralAccent;
+        if (appName.Equals(AudioManager.MasterVolumeProcessName, StringComparison.OrdinalIgnoreCase))
+            return MasterAccent;
+
+        var (r, g, b) = _audioManager.GetIconColor(appName);
+        return Windows.UI.Color.FromArgb(255, r, g, b);
     }
 
     private void UpdateRunningState() =>
@@ -110,6 +133,7 @@ public partial class ChannelViewModel : ObservableObject
         Volume = _audioManager.GetVolume(value) * 100;
         IsMuted = _audioManager.GetMute(value);
         IconSource = GetSessionIcon(value);
+        AccentColor = ComputeAccent(value);
         UpdateRunningState();
         _onSettingsChanged();
         _onSyncNeeded(this);
@@ -123,6 +147,9 @@ public partial class ChannelViewModel : ObservableObject
             return; // app not running — keep last-known icon and volume
 
         IconSource = session.IconSource;
+        // The icon (and so its dominant color) may only become extractable once
+        // the app is actually running — refresh the tint alongside it.
+        AccentColor = ComputeAccent(AppName);
         Volume = _audioManager.GetVolume(AppName) * 100;
         IsMuted = _audioManager.GetMute(AppName);
         _onSyncNeeded(this);

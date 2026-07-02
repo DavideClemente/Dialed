@@ -11,6 +11,7 @@ public class AppSettings
 
     public string ComPort { get; set; } = "COM3";
     public int BaudRate { get; set; } = 921600;
+    public bool AutoReconnect { get; set; } = true;
     public int RefreshIntervalSeconds { get; set; } = 2;
     public int IdleTimeoutSeconds { get; set; } = 3;
     public double NavPaneWidth { get; set; } = 320;

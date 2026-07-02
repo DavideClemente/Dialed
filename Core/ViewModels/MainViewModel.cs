@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.IO.Ports;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,7 +23,15 @@ public partial class MainViewModel : ObservableObject
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly AppSettings _settings;
     private readonly DispatcherTimer _refreshTimer;
+    // Polls for the controller being unplugged/replugged so we can drop the stale
+    // handle and re-open automatically. Fixed cadence (independent of the session
+    // refresh interval) so reconnection stays responsive even if refresh is slow.
+    private readonly DispatcherTimer _connectionTimer;
     private SerialManager _serial;
+    // What the UI currently reflects about the connection, so the watchdog can spot a
+    // drop even when Windows closes the handle itself on unplug (IsConnected flips
+    // false before we detect the port vanishing).
+    private bool _wasConnected;
     private readonly IdleGifLibraryService _idleGifLibrary = new();
 
     public IdleScreenViewModel? IdleScreen { get; private set; }
@@ -37,6 +46,10 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private string serialStatus = Loc.Get("Serial_NotConnected");
+
+    /// <summary>Mirrors the serial connection for the shell's always-visible status pill.</summary>
+    [ObservableProperty]
+    private bool isSerialConnected;
 
     [ObservableProperty]
     private double refreshIntervalSeconds;
@@ -57,10 +70,17 @@ public partial class MainViewModel : ObservableObject
     private int knobCount;
 
     [ObservableProperty]
+    private bool autoReconnect;
+
+    [ObservableProperty]
     private bool debugSerialEvents;
 
     [ObservableProperty]
     private bool showPercentSign;
+
+    // Backed by the registry Run key (see StartupService), not settings.json.
+    [ObservableProperty]
+    private bool startWithWindows;
 
     [ObservableProperty]
     private string language;
@@ -105,8 +125,10 @@ public partial class MainViewModel : ObservableObject
         inputMode = _settings.InputMode;
         encoderStepPercent = _settings.EncoderStepPercent;
         knobCount = _settings.KnobCount;
+        autoReconnect = _settings.AutoReconnect;
         debugSerialEvents = _settings.DebugSerialEvents;
         showPercentSign = _settings.ShowPercentSign;
+        startWithWindows = StartupService.IsEnabled;
         language = _settings.Language;
 
         foreach (var process in _settings.ExcludedProcesses)
@@ -121,11 +143,7 @@ public partial class MainViewModel : ObservableObject
         foreach (var config in _settings.Channels)
             AddChannelInternal(config.AppName, config.KnobIndex, save: false);
 
-        _ = Task.Run(async () =>
-        {
-            await Task.Delay(2000);
-            _dispatcherQueue.TryEnqueue(SyncAllChannels);
-        });
+        ScheduleResync();
 
         RefreshAvailableSessions();
 
@@ -136,7 +154,87 @@ public partial class MainViewModel : ObservableObject
             Output.RefreshDevices();
         };
         _refreshTimer.Start();
+
+        _connectionTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+        _connectionTimer.Tick += (_, _) => CheckConnection();
+        if (AutoReconnect)
+            _connectionTimer.Start();
     }
+
+    // Waits for the controller to finish booting after a (re)connect, then pushes
+    // assignments/config. Shared by first launch, manual reconnect, and auto-reconnect.
+    private void ScheduleResync() => _ = Task.Run(async () =>
+    {
+        await Task.Delay(2000);
+        _dispatcherQueue.TryEnqueue(SyncAllChannels);
+    });
+
+    // Detects unplug (target port vanished from the system) and replug (port is back
+    // while we're disconnected), tearing down / re-opening the serial handle to match.
+    private void CheckConnection()
+    {
+        if (!AutoReconnect)
+            return;
+
+        var portPresent = PortIsPresent(ComPort);
+        var connected = _serial.IsConnected;
+
+        // Connection dropped without us tearing it down — on many boards Windows closes
+        // the handle itself on unplug, so IsConnected flips false before we notice the
+        // port vanish. Reflect the loss in the UI once.
+        if (_wasConnected && !connected)
+        {
+            _wasConnected = false;
+            LogSerial($"watchdog: connection lost ({ComPort})");
+            SerialStatus = Loc.Get("Serial_DeviceRemoved");
+            UpdateChannelsSerialState(false);
+        }
+
+        if (connected)
+        {
+            // Still reported open but the port is gone → surprise-removed. Close on a
+            // background thread (Close() can block/deadlock on a removed device) and swap
+            // in an inert placeholder so the next tick can't touch a disposing port.
+            if (!portPresent)
+            {
+                LogSerial($"watchdog: {ComPort} disappeared → dropping connection");
+                var dead = _serial;
+                UnsubscribeSerial(dead);
+                Task.Run(dead.Stop);
+                _serial = new SerialManager(ComPort, BaudRate);
+                _wasConnected = false;
+                SerialStatus = Loc.Get("Serial_DeviceRemoved");
+                UpdateChannelsSerialState(false);
+            }
+            else
+            {
+                _wasConnected = true;
+            }
+            return;
+        }
+
+        // Disconnected: re-open as soon as the port reappears. DetachSerial first so a
+        // never-opened or already-torn-down handle can't leave stale event handlers.
+        if (portPresent)
+        {
+            LogSerial($"watchdog: {ComPort} present → reconnecting");
+            DetachSerial();
+            _serial = CreateAndStartSerial();
+            if (_serial.IsConnected)
+            {
+                _wasConnected = true;
+                LogSerial("watchdog: reconnected");
+                ScheduleResync();
+            }
+            else
+            {
+                LogSerial("watchdog: reopen failed (port present but Open threw)");
+            }
+        }
+    }
+
+    private static bool PortIsPresent(string comPort) =>
+        SerialPort.GetPortNames().Any(p => p.Equals(comPort, StringComparison.OrdinalIgnoreCase));
 
     public void InitIdleScreen(
         Func<Task<IReadOnlyList<StorageFile>>> pickGifs,
@@ -213,21 +311,30 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Reconnect()
     {
-        _serial.KnobChanged -= OnKnobChanged;
-        _serial.KnobDelta -= OnKnobDelta;
-        _serial.KnobPressed -= OnKnobPressed;
-        _serial.SwitchChanged -= OnSwitchChanged;
-        _serial.Stop();
+        DetachSerial();
         _serial = CreateAndStartSerial();
-        _ = Task.Run(async () =>
-        {
-            await Task.Delay(2000);
-            _dispatcherQueue.TryEnqueue(SyncAllChannels);
-        });
+        ScheduleResync();
 
         _settings.ComPort = ComPort;
         _settings.BaudRate = BaudRate;
         SettingsService.Save(_settings);
+    }
+
+    // Unsubscribes from the current serial handle and closes it synchronously. Used by
+    // the reopen paths (manual Reconnect / watchdog replug) where the device is present,
+    // so Close() returns quickly. Safe on an already-stopped handle (Stop swallows).
+    private void DetachSerial()
+    {
+        UnsubscribeSerial(_serial);
+        _serial.Stop();
+    }
+
+    private void UnsubscribeSerial(SerialManager serial)
+    {
+        serial.KnobChanged -= OnKnobChanged;
+        serial.KnobDelta -= OnKnobDelta;
+        serial.KnobPressed -= OnKnobPressed;
+        serial.SwitchChanged -= OnSwitchChanged;
     }
 
     [RelayCommand]
@@ -269,6 +376,7 @@ public partial class MainViewModel : ObservableObject
 
     private void UpdateChannelsSerialState(bool connected)
     {
+        IsSerialConnected = connected;
         foreach (var ch in Channels)
             ch.IsSerialConnected = connected;
     }
@@ -424,6 +532,18 @@ public partial class MainViewModel : ObservableObject
         _settings.ShowPercentSign = value;
         SettingsService.Save(_settings);
         _serial?.SendShowPercent(value);
+    }
+
+    partial void OnStartWithWindowsChanged(bool value) => StartupService.SetEnabled(value);
+
+    partial void OnAutoReconnectChanged(bool value)
+    {
+        _settings.AutoReconnect = value;
+        SettingsService.Save(_settings);
+        if (value)
+            _connectionTimer.Start();
+        else
+            _connectionTimer.Stop();
     }
 
     partial void OnLanguageChanged(string value)

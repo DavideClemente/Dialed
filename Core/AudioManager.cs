@@ -58,6 +58,11 @@ public class AudioManager
                 try
                 {
                     var pid = (int)session.GetProcessID;
+
+                    // Never offer the mixer itself as a controllable channel.
+                    if (pid == Environment.ProcessId)
+                        continue;
+
                     var process = Process.GetProcessById(pid);
 
                     result.Add(new AudioSession

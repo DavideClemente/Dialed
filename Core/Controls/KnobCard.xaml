@@ -8,21 +8,14 @@
     PointerReleased="OnPointerReleased"
     PointerCaptureLost="OnPointerCaptureLost">
 
-    <Border CornerRadius="18" BorderThickness="1" Margin="8">
-        <Border.Background>
-            <LinearGradientBrush StartPoint="0,0" EndPoint="0.6,1">
-                <GradientStop Color="#171717" Offset="0"/>
-                <GradientStop Color="#101010" Offset="1"/>
-            </LinearGradientBrush>
-        </Border.Background>
-        <Border.BorderBrush>
-            <SolidColorBrush Color="#282828"/>
-        </Border.BorderBrush>
+    <Border CornerRadius="14" BorderThickness="1" Margin="8"
+            Background="{StaticResource SurfaceCardBrush}"
+            BorderBrush="{StaticResource StrokeDefaultBrush}">
 
         <Grid Opacity="{x:Bind ConvertOfflineToOpacity(Channel.IsOffline), Mode=OneWay}">
 
-            <!-- Top white shimmer line -->
-            <Border VerticalAlignment="Top" Height="1" CornerRadius="18,18,0,0">
+            <!-- Top white shimmer line (theme signature) -->
+            <Border VerticalAlignment="Top" Height="1" CornerRadius="14,14,0,0">
                 <Border.Background>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                         <GradientStop Color="#00FFFFFF" Offset="0"/>
@@ -33,27 +26,25 @@
                 </Border.Background>
             </Border>
 
-            <StackPanel Padding="18,16,18,18">
+            <StackPanel Padding="16,15,16,16">
 
-                <!-- Header: icon + name + settings -->
+                <!-- Header: tinted icon + name + chips, gear on the right -->
                 <Grid>
                     <StackPanel Orientation="Horizontal" Spacing="11" VerticalAlignment="Center"
                                 HorizontalAlignment="Left">
 
-                        <!-- App icon container -->
-                        <Border Width="40" Height="40" CornerRadius="10" Background="#1C1C1C"
-                                BorderThickness="1">
-                            <Border.BorderBrush>
-                                <SolidColorBrush Color="#2A2A2A"/>
-                            </Border.BorderBrush>
+                        <!-- App icon container, tinted with the app's dominant color -->
+                        <Border Width="40" Height="40" CornerRadius="10" BorderThickness="1"
+                                Background="{x:Bind GetAccentTintBrush(Channel.AccentColor), Mode=OneWay}"
+                                BorderBrush="{x:Bind GetAccentBorderBrush(Channel.AccentColor), Mode=OneWay}">
                             <Grid>
                                 <FontIcon Glyph="&#xE767;"
                                           FontSize="20"
-                                          Foreground="#505050"
+                                          Foreground="{StaticResource TextDisabledBrush}"
                                           Visibility="{x:Bind ConvertIconFallbackToVisibility(Channel.IconSource), Mode=OneWay}"
                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 <Image Source="{x:Bind Channel.IconSource, Mode=OneWay}"
-                                       Width="24" Height="24"
+                                       Width="28" Height="28"
                                        Visibility="{x:Bind ConvertIconToVisibility(Channel.IconSource), Mode=OneWay}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Grid>
@@ -66,77 +57,73 @@
                                 FontSize="15"
                                 FontWeight="SemiBold"
                                 FontFamily="Segoe UI Variable Display"
-                                Foreground="#F0F0F0"
+                                Foreground="{StaticResource TextPrimaryBrush}"
                                 CharacterSpacing="-15"/>
                             <StackPanel Orientation="Horizontal" Spacing="5">
-                                <Border Background="#141414" CornerRadius="4" Padding="6,2"
-                                        HorizontalAlignment="Left">
+                                <Border Style="{StaticResource InsetChipStyle}" HorizontalAlignment="Left">
                                     <TextBlock
+                                        Style="{StaticResource MonoBadgeTextStyle}"
                                         Text="{x:Bind Channel.KnobLabel, Mode=OneWay}"
-                                        FontSize="9"
-                                        FontFamily="Cascadia Code, Consolas"
-                                        Foreground="#505050"
                                         CharacterSpacing="100"/>
                                 </Border>
-                                <Border Background="#1A1400" CornerRadius="4" Padding="5,2"
+                                <Border Background="{StaticResource WarningSubtleBrush}" CornerRadius="4" Padding="5,2"
                                         Visibility="{x:Bind ConvertDisconnectedToVisibility(Channel.IsSerialConnected), Mode=OneWay}"
                                         ToolTipService.ToolTip="{loc:Loc Key=Knob_Offline_Tip}">
                                     <TextBlock
+                                        Style="{StaticResource MonoBadgeTextStyle}"
                                         Text="{loc:Loc Key=Knob_Offline}"
-                                        FontSize="9"
-                                        FontFamily="Cascadia Code, Consolas"
-                                        Foreground="#B89530"/>
+                                        Foreground="{StaticResource WarningTextBrush}"/>
                                 </Border>
-                                <Border Background="#1A1414" CornerRadius="4" Padding="5,2"
+                                <Border Background="{StaticResource DangerSubtleBrush}" CornerRadius="4" Padding="5,2"
                                         Visibility="{x:Bind ConvertOfflineToVisibility(Channel.IsOffline), Mode=OneWay}"
                                         ToolTipService.ToolTip="{loc:Loc Key=Knob_NotRunning_Tip}">
                                     <TextBlock
+                                        Style="{StaticResource MonoBadgeTextStyle}"
                                         Text="{loc:Loc Key=Knob_NotRunning}"
-                                        FontSize="9"
-                                        FontFamily="Cascadia Code, Consolas"
-                                        Foreground="#C06060"/>
+                                        Foreground="{StaticResource DangerTextBrush}"/>
                                 </Border>
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
 
-                    <!-- Settings gear -->
+                    <!-- Channel settings -->
                     <Button HorizontalAlignment="Right" VerticalAlignment="Top"
                             Click="OnSettingsClick"
-                            Width="30" Height="30" Padding="0" CornerRadius="8" BorderThickness="1">
+                            Width="30" Height="30" Padding="0" CornerRadius="8" BorderThickness="0">
                         <Button.Resources>
-                            <SolidColorBrush x:Key="ButtonBackground" Color="#141414"/>
-                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1E1E1E"/>
-                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#0A0A0A"/>
-                            <SolidColorBrush x:Key="ButtonBorderBrush" Color="#282828"/>
-                            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#404040"/>
-                            <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#282828"/>
-                            <SolidColorBrush x:Key="ButtonForeground" Color="#484848"/>
-                            <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#888888"/>
-                            <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#484848"/>
+                            <SolidColorBrush x:Key="ButtonBackground" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="{StaticResource SurfaceControlColor}"/>
+                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="{StaticResource SurfaceInsetColor}"/>
+                            <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="{StaticResource StrokeDefaultColor}"/>
+                            <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ButtonForeground" Color="{StaticResource TextDisabledColor}"/>
+                            <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="{StaticResource TextSecondaryColor}"/>
+                            <SolidColorBrush x:Key="ButtonForegroundPressed" Color="{StaticResource TextDisabledColor}"/>
                         </Button.Resources>
-                        <TextBlock Text="⚙" FontSize="13"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <FontIcon Glyph="&#xE713;" FontSize="14"/>
                     </Button>
                 </Grid>
 
-                <!-- Volume slider -->
+                <!-- Volume slider: value fill takes the app's accent color -->
                 <Slider
+                    x:Name="VolumeSlider"
                     Value="{x:Bind Channel.Volume, Mode=TwoWay}"
                     Minimum="0"
                     Maximum="100"
-                    Margin="0,22,0,0"
+                    Margin="0,20,0,0"
                     IsEnabled="{x:Bind ConvertOfflineToEnabled(Channel.IsOffline), Mode=OneWay}"
                     Opacity="{x:Bind ConvertMuteToOpacity(Channel.IsMuted), Mode=OneWay}">
                     <Slider.Resources>
-                        <SolidColorBrush x:Key="SliderTrackFill" Color="#1C1C1C"/>
-                        <SolidColorBrush x:Key="SliderTrackFillPointerOver" Color="#222222"/>
-                        <SolidColorBrush x:Key="SliderTrackFillPressed" Color="#1C1C1C"/>
-                        <SolidColorBrush x:Key="SliderTrackFillDisabled" Color="#141414"/>
+                        <SolidColorBrush x:Key="SliderTrackFill" Color="{StaticResource SurfaceControlColor}"/>
+                        <SolidColorBrush x:Key="SliderTrackFillPointerOver" Color="#2A2A31"/>
+                        <SolidColorBrush x:Key="SliderTrackFillPressed" Color="{StaticResource SurfaceControlColor}"/>
+                        <SolidColorBrush x:Key="SliderTrackFillDisabled" Color="{StaticResource SurfaceInsetColor}"/>
+                        <!-- These three are mutated in code-behind to the channel's accent. -->
                         <SolidColorBrush x:Key="SliderTrackValueFill" Color="#D8D8D8"/>
                         <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="#EEEEEE"/>
                         <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="#C0C0C0"/>
-                        <SolidColorBrush x:Key="SliderTrackValueFillDisabled" Color="#1C1C1C"/>
+                        <SolidColorBrush x:Key="SliderTrackValueFillDisabled" Color="{StaticResource SurfaceControlColor}"/>
                         <SolidColorBrush x:Key="SliderThumbBackground" Color="#FFFFFF"/>
                         <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#FFFFFF"/>
                         <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#D0D0D0"/>
@@ -147,10 +134,9 @@
                     </Slider.Resources>
                 </Slider>
 
-                <!-- Footer: mute button + volume % -->
+                <!-- Footer: mute toggle + volume readout -->
                 <Grid Margin="0,12,0,0">
 
-                    <!-- Mute button: Border provides dynamic bg -->
                     <Border
                         HorizontalAlignment="Left"
                         Width="34" Height="34"
@@ -169,23 +155,21 @@
                                 <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent"/>
                                 <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent"/>
                             </Button.Resources>
-                            <TextBlock
-                                Text="{x:Bind FormatMuteIcon(Channel.IsMuted), Mode=OneWay}"
-                                FontSize="15"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"/>
+                            <FontIcon
+                                Glyph="{x:Bind FormatMuteIcon(Channel.IsMuted), Mode=OneWay}"
+                                FontSize="14"
+                                Foreground="{x:Bind GetMuteIconBrush(Channel.IsMuted), Mode=OneWay}"/>
                         </Button>
                     </Border>
 
-                    <!-- Volume percentage -->
                     <TextBlock
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center"
                         Text="{x:Bind FormatPercent(Channel.Volume), Mode=OneWay}"
-                        FontSize="13"
+                        FontSize="14"
                         FontFamily="Cascadia Code, Consolas"
                         FontWeight="SemiBold"
-                        Foreground="#505050"/>
+                        Foreground="{x:Bind GetPercentBrush(Channel.IsMuted), Mode=OneWay}"/>
                 </Grid>
 
             </StackPanel>

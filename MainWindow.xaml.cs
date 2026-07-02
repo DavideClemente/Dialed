@@ -50,9 +50,6 @@ namespace AudioMixerWin
 
         private const int SW_RESTORE = 9;
 
-        private const double MinPaneWidth = 200;
-        private const double MaxPaneWidth = 400;
-
         public MainViewModel ViewModel { get; } = new();
 
         private readonly MainPage _mainPage;
@@ -63,10 +60,6 @@ namespace AudioMixerWin
         private readonly TaskbarIcon _trayIcon;
         private readonly string _iconPath;
         private readonly IntPtr _hwnd;
-
-        private bool _isDraggingSplitter;
-        private double _dragStartX;
-        private double _dragStartWidth;
 
         public MainWindow()
         {
@@ -108,32 +101,42 @@ namespace AudioMixerWin
             // language override, so give it explicit English content. SettingsItem is
             // only realized once the control template is applied (on Loaded).
             NavView.Loaded += OnNavViewLoaded;
-
-            NavView.OpenPaneLength = ViewModel.NavPaneWidth;
-            PositionSplitter(ViewModel.NavPaneWidth);
         }
 
         private void ConfigureTitleBar()
         {
+            // The XAML title bar row replaces the system one; caption buttons sit
+            // transparently on top of the Mica backdrop.
+            ExtendsContentIntoTitleBar = true;
+            SetTitleBar(AppTitleBar);
+
             var titleBar = _appWindow.TitleBar;
-            var bg = Color.FromArgb(255, 10, 10, 10);
             var fg = Color.FromArgb(255, 230, 230, 230);
-            var fgMuted = Color.FromArgb(255, 80, 80, 80);
-            var hover = Color.FromArgb(255, 28, 28, 28);
-            var pressed = Color.FromArgb(255, 18, 18, 18);
-            titleBar.BackgroundColor = bg;
-            titleBar.ForegroundColor = fg;
-            titleBar.InactiveBackgroundColor = bg;
-            titleBar.InactiveForegroundColor = fgMuted;
-            titleBar.ButtonBackgroundColor = bg;
+            var fgMuted = Color.FromArgb(255, 106, 106, 116);
+            titleBar.ButtonBackgroundColor = Colors.Transparent;
             titleBar.ButtonForegroundColor = fg;
-            titleBar.ButtonHoverBackgroundColor = hover;
+            titleBar.ButtonHoverBackgroundColor = Color.FromArgb(255, 35, 35, 41);
             titleBar.ButtonHoverForegroundColor = fg;
-            titleBar.ButtonPressedBackgroundColor = pressed;
+            titleBar.ButtonPressedBackgroundColor = Color.FromArgb(255, 27, 27, 32);
             titleBar.ButtonPressedForegroundColor = fgMuted;
-            titleBar.ButtonInactiveBackgroundColor = bg;
+            titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
             titleBar.ButtonInactiveForegroundColor = fgMuted;
         }
+
+        // Status-pill palette: mint when the controller is connected, amber otherwise.
+        private static readonly SolidColorBrush PillBgConnected = new(Color.FromArgb(255, 20, 32, 26));
+        private static readonly SolidColorBrush PillBgDisconnected = new(Color.FromArgb(255, 26, 20, 0));
+        private static readonly SolidColorBrush PillStrokeConnected = new(Color.FromArgb(255, 30, 58, 44));
+        private static readonly SolidColorBrush PillStrokeDisconnected = new(Color.FromArgb(255, 58, 46, 16));
+        private static readonly SolidColorBrush PillFgConnected = new(Color.FromArgb(255, 127, 214, 172));
+        private static readonly SolidColorBrush PillFgDisconnected = new(Color.FromArgb(255, 184, 149, 48));
+        private static readonly SolidColorBrush PillDotConnected = new(Color.FromArgb(255, 52, 211, 153));
+        private static readonly SolidColorBrush PillDotDisconnected = new(Color.FromArgb(255, 184, 149, 48));
+
+        public SolidColorBrush PillBackground(bool connected) => connected ? PillBgConnected : PillBgDisconnected;
+        public SolidColorBrush PillStroke(bool connected) => connected ? PillStrokeConnected : PillStrokeDisconnected;
+        public SolidColorBrush PillText(bool connected) => connected ? PillFgConnected : PillFgDisconnected;
+        public SolidColorBrush PillDot(bool connected) => connected ? PillDotConnected : PillDotDisconnected;
 
         private async void OnWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
         {
@@ -221,6 +224,13 @@ namespace AudioMixerWin
 
         private void MinimizeToTray() => WindowExtensions.Hide(this);
 
+        /// <summary>
+        /// Brings the app up hidden in the tray without ever showing the window
+        /// (used for the --minimized auto-start launch). The tray icon is already
+        /// created in the constructor, so the app remains reachable.
+        /// </summary>
+        public void HideToTray() => WindowExtensions.Hide(this);
+
         private void RestoreWindow()
         {
             WindowExtensions.Show(this);
@@ -289,64 +299,15 @@ namespace AudioMixerWin
                 SuggestedStartLocation = PickerLocationId.PicturesLibrary,
             };
             picker.FileTypeFilter.Add(".gif");
+            picker.FileTypeFilter.Add(".png");
+            picker.FileTypeFilter.Add(".jpg");
+            picker.FileTypeFilter.Add(".jpeg");
+            picker.FileTypeFilter.Add(".bmp");
             WinRT.Interop.InitializeWithWindow.Initialize(picker, _hwnd);
 
             var files = await picker.PickMultipleFilesAsync();
             return files ?? new List<StorageFile>();
         }
 
-        private void PositionSplitter(double paneWidth) =>
-            PaneSplitter.Margin = new Thickness(paneWidth - PaneSplitter.Width / 2, 0, 0, 0);
-
-        private void OnSplitterPointerEntered(object sender, PointerRoutedEventArgs e) =>
-            PaneSplitter.Background = new SolidColorBrush(Colors.Gray) { Opacity = 0.3 };
-
-        private void OnSplitterPointerExited(object sender, PointerRoutedEventArgs e)
-        {
-            if (!_isDraggingSplitter)
-                PaneSplitter.Background = new SolidColorBrush(Colors.Transparent);
-        }
-
-        private void OnSplitterPointerPressed(object sender, PointerRoutedEventArgs e)
-        {
-            _isDraggingSplitter = true;
-            _dragStartX = e.GetCurrentPoint(Content).Position.X;
-            _dragStartWidth = NavView.OpenPaneLength;
-            PaneSplitter.CapturePointer(e.Pointer);
-        }
-
-        private void OnSplitterPointerMoved(object sender, PointerRoutedEventArgs e)
-        {
-            if (!_isDraggingSplitter)
-                return;
-
-            var currentX = e.GetCurrentPoint(Content).Position.X;
-            var newWidth = Math.Clamp(_dragStartWidth + (currentX - _dragStartX), MinPaneWidth, MaxPaneWidth);
-            NavView.OpenPaneLength = newWidth;
-            PositionSplitter(newWidth);
-        }
-
-        private void OnSplitterPointerReleased(object sender, PointerRoutedEventArgs e)
-        {
-            PaneSplitter.ReleasePointerCapture(e.Pointer);
-            EndSplitterDrag();
-        }
-
-        private void OnSplitterPointerCaptureLost(object sender, PointerRoutedEventArgs e)
-        {
-            // PointerCaptureLost means capture is already gone; do not call
-            // ReleasePointerCapture here as it would be redundant/could throw.
-            EndSplitterDrag();
-        }
-
-        private void EndSplitterDrag()
-        {
-            if (!_isDraggingSplitter)
-                return;
-
-            _isDraggingSplitter = false;
-            PaneSplitter.Background = new SolidColorBrush(Colors.Transparent);
-            ViewModel.NavPaneWidth = NavView.OpenPaneLength;
-        }
     }
 }

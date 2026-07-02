@@ -9,9 +9,10 @@ using Windows.Storage;
 namespace AudioMixerWin.Core.Services;
 
 /// <summary>
-/// Owns the idle-screen GIF cache folder (one copied .gif file per library
-/// entry). Mirrors the defensive, folder-owning style of IconStore: IO errors
-/// are swallowed so cache problems never surface as exceptions in the UI.
+/// Owns the idle-screen media cache folder (one copied file per library entry —
+/// an animated GIF or a static image such as PNG/JPG). Mirrors the defensive,
+/// folder-owning style of IconStore: IO errors are swallowed so cache problems
+/// never surface as exceptions in the UI.
 /// </summary>
 public class IdleGifLibraryService
 {
@@ -20,8 +21,9 @@ public class IdleGifLibraryService
         "AudioMixerWin", "idle-gifs");
 
     /// <summary>
-    /// Copies a picked GIF into the cache under a new GUID filename and reads
-    /// its dimensions. Returns null if the file can't be read/decoded.
+    /// Copies a picked GIF or static image into the cache under a new GUID
+    /// filename (preserving the original extension) and reads its dimensions.
+    /// Returns null if the file can't be read/decoded.
     /// </summary>
     public async Task<IdleGifConfig?> ImportAsync(StorageFile file)
     {
@@ -30,7 +32,10 @@ public class IdleGifLibraryService
             System.IO.Directory.CreateDirectory(Directory);
 
             var id = Guid.NewGuid().ToString("N");
-            var fileName = id + ".gif";
+            var ext = Path.GetExtension(file.Name).ToLowerInvariant();
+            if (string.IsNullOrEmpty(ext))
+                ext = ".gif";
+            var fileName = id + ext;
             var destPath = Path.Combine(Directory, fileName);
 
             using (var src = await file.OpenStreamForReadAsync())

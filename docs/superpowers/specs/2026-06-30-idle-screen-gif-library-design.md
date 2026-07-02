@@ -33,8 +33,9 @@ during `/frontend-design`, with a single active GIF.
   - A leading **Add** tile in the grid (and an **Upload GIF** button in the header) that opens
     a file picker.
   - A footer line summarizing usage: "*N GIFs · X MB*" (informational only).
-- **Upload:** picking one or more `.gif` files copies them into the cache and adds them to the
-  library. Non-`.gif` files are not selectable in the picker.
+- **Upload:** picking one or more media files (`.gif` plus static images — `.png`, `.jpg`,
+  `.jpeg`, `.bmp`) copies them into the cache and adds them to the library. Other file types are
+  not selectable in the picker.
 - **Select:** clicking a card's ✓ (or the card) makes it the selected idle GIF; the hero and the
   outline update; the choice persists across restarts.
 - **Delete:** clicking a card's 🗑 asks for confirmation via a `ContentDialog`. On confirm, the
@@ -43,8 +44,10 @@ during `/frontend-design`, with a single active GIF.
 
 ### Decisions locked for this iteration
 
-- **`.gif` only.** Static images (PNG/JPG) are not accepted. The feature is explicitly a GIF
-  library; broadening to stills can be a later change.
+- **GIFs and static images.** Animated `.gif` plus static `.png`/`.jpg`/`.jpeg`/`.bmp` are
+  accepted. A still is encoded as a single-frame upload — the same pipeline handles both because
+  the decoder and encoder are format-agnostic (`GifFrameEncoder` falls back to one frame when the
+  source isn't animated).
 - **No enforced storage cap.** The footer shows total usage as information; there is no quota
   and no automatic eviction.
 
@@ -131,7 +134,8 @@ animated `Image`, navigation). Verification is manual:
 
 1. Build `dotnet build AudioMixerWin.csproj -p:Platform=x64 -c Debug` (must pass).
 2. Launch; confirm the **Idle Screen** nav item appears and selects its page.
-3. Upload one or more `.gif` files → they appear as animated thumbnails; cache folder populated.
+3. Upload one or more media files (`.gif` and static `.png`/`.jpg`) → they appear as thumbnails
+   (GIFs animate, stills render); cache folder populated.
 4. Select a GIF → hero + outline update; restart → selection persists.
 5. Delete a GIF (incl. the selected one) → confirm dialog, file removed, selection cleared when
    appropriate.
@@ -150,5 +154,5 @@ project exists today.
   playback on idle. This is the hard part and gets its own spec. The hardware constraints make it
   non-trivial: classic ESP32 (no PSRAM, ~290 KB heap) and a 115200-baud link (~11 KB/s) cannot
   live-stream ~113 KB/frame, so delivery must be a one-time converted upload to flash.
-- Static images (PNG/JPG), per-GIF cropping/editing, reordering the library, GIF rotation/playlist
-  (cycling multiple GIFs), and any storage quota/eviction.
+- Per-item cropping/editing, reordering the library, rotation/playlist (cycling multiple items),
+  and any storage quota/eviction.

@@ -14,7 +14,7 @@
 - Build command (the per-task gate, since there is no test project): `dotnet build AudioMixerWin.csproj -p:Platform=x64 -c Debug` must succeed.
 - Cache root is `%LocalAppData%\AudioMixerWin\` (`Environment.SpecialFolder.LocalApplicationData` + `"AudioMixerWin"`), same as `SettingsService`/`IconStore`. The GIF subfolder is `idle-gifs`.
 - File IO is defensive: swallow IO exceptions and return null / skip, matching `IconStore` and `SettingsService`. Never let cache IO throw into the UI.
-- `.gif` only. No enforced storage quota — usage is informational.
+- `.gif` plus static images (`.png`/`.jpg`/`.jpeg`/`.bmp`) — a still uploads as a single frame. No enforced storage quota — usage is informational.
 - Namespaces match folders: services `AudioMixerWin.Core.Services`, models `AudioMixerWin.Core.Models`, view-models `AudioMixerWin.Core.ViewModels`, views `AudioMixerWin.Core.Views`.
 - UI label for the chosen GIF is **"Selected"**, never "Active on device" (the GIF does not reach the device in this iteration).
 - Dark theme brushes reused from existing pages: `#1C1C1C` surfaces, `#383838` borders (`#505050` hover), `#E0E0E0`/`#F0F0F0` text, `#0A0A0A` canvas, 8px corners, `Segoe UI Variable Display` for headings.
@@ -340,7 +340,7 @@ git commit -m "Add IdleGifViewModel for library entries"
   - `IRelayCommand<IdleGifViewModel> SetActiveCommand`
   - `IAsyncRelayCommand<IdleGifViewModel> DeleteGifCommand`
 
-**Notes on the injected delegates:** the picker (`pickGifs`) and `getXamlRoot` are supplied by the page/window so this view-model stays free of WinUI window-handle plumbing. `pickGifs` returns the picked `.gif` files (empty list if cancelled); `getXamlRoot` provides the `XamlRoot` the delete `ContentDialog` needs.
+**Notes on the injected delegates:** the picker (`pickGifs`) and `getXamlRoot` are supplied by the page/window so this view-model stays free of WinUI window-handle plumbing. `pickGifs` returns the picked media files — `.gif` or static images (empty list if cancelled); `getXamlRoot` provides the `XamlRoot` the delete `ContentDialog` needs.
 
 - [ ] **Step 1: Create the view-model**
 

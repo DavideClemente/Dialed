@@ -14,63 +14,14 @@
     CloseButtonText="{loc:Loc Key=Common_Cancel}"
     RequestedTheme="Dark">
 
-    <ContentDialog.Resources>
-        <!-- Dialog chrome -->
-        <SolidColorBrush x:Key="ContentDialogBackground" Color="#141414"/>
-        <SolidColorBrush x:Key="ContentDialogBorderBrush" Color="#2C2C2C"/>
-        <SolidColorBrush x:Key="ContentDialogForeground" Color="#E0E0E0"/>
-
-        <!-- Primary button (Select) -->
-        <SolidColorBrush x:Key="ContentDialogPrimaryButtonBackground" Color="#1C1C1C"/>
-        <SolidColorBrush x:Key="ContentDialogPrimaryButtonBackgroundPointerOver" Color="#282828"/>
-        <SolidColorBrush x:Key="ContentDialogPrimaryButtonBackgroundPressed" Color="#111111"/>
-        <SolidColorBrush x:Key="ContentDialogPrimaryButtonBorderBrush" Color="#383838"/>
-        <SolidColorBrush x:Key="ContentDialogPrimaryButtonBorderBrushPointerOver" Color="#505050"/>
-        <SolidColorBrush x:Key="ContentDialogPrimaryButtonBorderBrushPressed" Color="#282828"/>
-        <SolidColorBrush x:Key="ContentDialogPrimaryButtonForeground" Color="#D0D0D0"/>
-        <SolidColorBrush x:Key="ContentDialogPrimaryButtonForegroundPointerOver" Color="#F0F0F0"/>
-        <SolidColorBrush x:Key="ContentDialogPrimaryButtonForegroundPressed" Color="#A0A0A0"/>
-
-        <!-- Secondary button (Remove Channel) -->
-        <SolidColorBrush x:Key="ContentDialogSecondaryButtonBackground" Color="#1C1C1C"/>
-        <SolidColorBrush x:Key="ContentDialogSecondaryButtonBackgroundPointerOver" Color="#282828"/>
-        <SolidColorBrush x:Key="ContentDialogSecondaryButtonBackgroundPressed" Color="#111111"/>
-        <SolidColorBrush x:Key="ContentDialogSecondaryButtonBorderBrush" Color="#383838"/>
-        <SolidColorBrush x:Key="ContentDialogSecondaryButtonBorderBrushPointerOver" Color="#505050"/>
-        <SolidColorBrush x:Key="ContentDialogSecondaryButtonBorderBrushPressed" Color="#282828"/>
-        <SolidColorBrush x:Key="ContentDialogSecondaryButtonForeground" Color="#D0D0D0"/>
-        <SolidColorBrush x:Key="ContentDialogSecondaryButtonForegroundPointerOver" Color="#F0F0F0"/>
-        <SolidColorBrush x:Key="ContentDialogSecondaryButtonForegroundPressed" Color="#A0A0A0"/>
-
-        <!-- Close button (Cancel) -->
-        <SolidColorBrush x:Key="ContentDialogCloseButtonBackground" Color="Transparent"/>
-        <SolidColorBrush x:Key="ContentDialogCloseButtonBackgroundPointerOver" Color="#1A1A1A"/>
-        <SolidColorBrush x:Key="ContentDialogCloseButtonBackgroundPressed" Color="#111111"/>
-        <SolidColorBrush x:Key="ContentDialogCloseButtonBorderBrush" Color="Transparent"/>
-        <SolidColorBrush x:Key="ContentDialogCloseButtonBorderBrushPointerOver" Color="#303030"/>
-        <SolidColorBrush x:Key="ContentDialogCloseButtonBorderBrushPressed" Color="Transparent"/>
-        <SolidColorBrush x:Key="ContentDialogCloseButtonForeground" Color="#686868"/>
-        <SolidColorBrush x:Key="ContentDialogCloseButtonForegroundPointerOver" Color="#A0A0A0"/>
-        <SolidColorBrush x:Key="ContentDialogCloseButtonForegroundPressed" Color="#505050"/>
-
-        <!-- ListView items -->
-        <SolidColorBrush x:Key="ListViewItemBackground" Color="Transparent"/>
-        <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="#1E1E1E"/>
-        <SolidColorBrush x:Key="ListViewItemBackgroundSelected" Color="#242424"/>
-        <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPointerOver" Color="#2A2A2A"/>
-        <SolidColorBrush x:Key="ListViewItemForeground" Color="#C8C8C8"/>
-        <SolidColorBrush x:Key="ListViewItemForegroundSelected" Color="#F0F0F0"/>
-        <SolidColorBrush x:Key="ListViewBackground" Color="Transparent"/>
-    </ContentDialog.Resources>
-
     <StackPanel Spacing="8">
         <InfoBar x:Name="HideInfoBar" Severity="Warning" IsOpen="False" IsClosable="True" />
 
-        <TextBlock Text="{loc:Loc Key=AppPicker_Knob}" FontSize="13" Foreground="#C8C8C8" />
+        <TextBlock Text="{loc:Loc Key=AppPicker_Knob}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" />
         <ComboBox x:Name="KnobCombo" ItemsSource="{x:Bind KnobOptions}"
                   DisplayMemberPath="Label" HorizontalAlignment="Stretch" />
 
-        <TextBlock Text="{loc:Loc Key=AppPicker_App}" FontSize="13" Foreground="#C8C8C8" Margin="0,4,0,0" />
+        <TextBlock Text="{loc:Loc Key=AppPicker_App}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0" />
         <ListView x:Name="SessionsList" ItemsSource="{x:Bind SelectableSessions}" SelectionMode="Single"
                   Background="Transparent">
             <ListView.ItemContainerStyle>
@@ -88,24 +39,19 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Image Source="{x:Bind IconSource}" Width="20" Height="20"
-                               VerticalAlignment="Center" Stretch="UniformToFill"/>
+                        <Grid Width="20" Height="20" VerticalAlignment="Center">
+                            <FontIcon Glyph="&#xE767;" FontSize="14"
+                                      Foreground="{StaticResource TextDisabledBrush}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Visibility="{x:Bind IconSource, Converter={StaticResource NullToVisible}}"/>
+                            <Image Source="{x:Bind IconSource}" Width="20" Height="20"
+                                   Stretch="UniformToFill"
+                                   Visibility="{x:Bind IconSource, Converter={StaticResource NullToCollapsed}}"/>
+                        </Grid>
                         <TextBlock Grid.Column="1" Text="{x:Bind DisplayName}" VerticalAlignment="Center"
-                                   FontSize="13" Foreground="#C8C8C8"/>
+                                   FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"/>
                         <Button Grid.Column="2" Content="{loc:Loc Key=Common_Hide}" Tag="{x:Bind}" Click="OnHideClick"
-                                Padding="10,4" CornerRadius="6" BorderThickness="1">
-                            <Button.Resources>
-                                <SolidColorBrush x:Key="ButtonBackground" Color="#1C1C1C"/>
-                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#282828"/>
-                                <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#111111"/>
-                                <SolidColorBrush x:Key="ButtonBorderBrush" Color="#383838"/>
-                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#505050"/>
-                                <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#282828"/>
-                                <SolidColorBrush x:Key="ButtonForeground" Color="#888888"/>
-                                <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#C0C0C0"/>
-                                <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#606060"/>
-                            </Button.Resources>
-                        </Button>
+                                Padding="10,4" CornerRadius="6" BorderThickness="1" />
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>

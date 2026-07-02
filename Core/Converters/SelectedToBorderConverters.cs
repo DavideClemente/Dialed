@@ -9,10 +9,12 @@ namespace AudioMixerWin.Core.Converters;
 
 public class SelectedToBorderBrushConverter : IValueConverter
 {
+    // Mint accent when selected; the standard hairline stroke otherwise, so
+    // selection never adds/removes a border (which would shift layout).
     private static readonly SolidColorBrush Selected =
-        new(Color.FromArgb(0xFF, 0x46, 0xC2, 0x8E));
+        new(Color.FromArgb(0xFF, 0x34, 0xD3, 0x99));
     private static readonly SolidColorBrush None =
-        new(Colors.Transparent);
+        new(Color.FromArgb(0xFF, 0x26, 0x26, 0x2C));
 
     public object Convert(object value, Type targetType, object parameter, string language) =>
         value is true ? Selected : None;
@@ -24,7 +26,7 @@ public class SelectedToBorderBrushConverter : IValueConverter
 public class SelectedToBorderThicknessConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language) =>
-        value is true ? new Thickness(2) : new Thickness(0);
+        value is true ? new Thickness(2) : new Thickness(1);
 
     public object ConvertBack(object value, Type targetType, object parameter, string language) =>
         throw new NotSupportedException();

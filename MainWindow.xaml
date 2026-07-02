@@ -10,9 +10,57 @@
     mc:Ignorable="d"
     Title="AudioMixerWin">
 
-    <Grid RequestedTheme="Dark" Background="#0A0A0A">
+    <Grid RequestedTheme="Dark" Background="{StaticResource SurfaceBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Custom title bar: app identity + always-visible controller status. -->
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Background="Transparent" Padding="16,0,0,0" ColumnSpacing="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Image Grid.Column="0"
+                   Source="ms-appx:///Assets/Square44x44Logo.targetsize-24.png"
+                   Width="18" Height="18" VerticalAlignment="Center" />
+
+            <TextBlock Grid.Column="1"
+                       Text="Audio Mixer"
+                       FontSize="13"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       VerticalAlignment="Center" />
+
+            <Border Grid.Column="2"
+                    Background="{x:Bind PillBackground(ViewModel.IsSerialConnected), Mode=OneWay}"
+                    BorderBrush="{x:Bind PillStroke(ViewModel.IsSerialConnected), Mode=OneWay}"
+                    BorderThickness="1"
+                    CornerRadius="20"
+                    Padding="10,3"
+                    Margin="6,0,0,0"
+                    VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                    <Ellipse Width="7" Height="7"
+                             Fill="{x:Bind PillDot(ViewModel.IsSerialConnected), Mode=OneWay}"
+                             VerticalAlignment="Center" />
+                    <TextBlock Text="{x:Bind ViewModel.SerialStatus, Mode=OneWay}"
+                               FontSize="11"
+                               Foreground="{x:Bind PillText(ViewModel.IsSerialConnected), Mode=OneWay}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
         <NavigationView
             x:Name="NavView"
+            Grid.Row="1"
+            PaneDisplayMode="LeftCompact"
+            CompactPaneLength="56"
+            IsPaneToggleButtonVisible="False"
             IsBackButtonVisible="Collapsed"
             SelectionChanged="OnNavSelectionChanged">
 
@@ -34,20 +82,14 @@
                 </NavigationViewItem>
             </NavigationView.MenuItems>
 
-            <Frame x:Name="ContentFrame" />
+            <Frame x:Name="ContentFrame">
+                <Frame.ContentTransitions>
+                    <TransitionCollection>
+                        <ContentThemeTransition VerticalOffset="24" />
+                    </TransitionCollection>
+                </Frame.ContentTransitions>
+            </Frame>
 
         </NavigationView>
-
-        <Border
-            x:Name="PaneSplitter"
-            Width="6"
-            HorizontalAlignment="Left"
-            Background="Transparent"
-            PointerEntered="OnSplitterPointerEntered"
-            PointerExited="OnSplitterPointerExited"
-            PointerPressed="OnSplitterPointerPressed"
-            PointerMoved="OnSplitterPointerMoved"
-            PointerReleased="OnSplitterPointerReleased"
-            PointerCaptureLost="OnSplitterPointerCaptureLost" />
     </Grid>
 </Window>
