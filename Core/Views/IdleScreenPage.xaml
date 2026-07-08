@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AudioMixerWin.Core.Views.IdleScreenPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:AudioMixerWin.Core.ViewModels"
+    xmlns:loc="using:AudioMixerWin.Core.Services"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer>
+        <StackPanel Padding="24,20,24,24" Spacing="16" MaxWidth="860" HorizontalAlignment="Left">
+
+            <Grid>
+                <StackPanel Spacing="2">
+                    <TextBlock Text="{loc:Loc Key=Idle_Title}" Style="{StaticResource PageTitleStyle}" />
+                    <TextBlock Text="{loc:Loc Key=Idle_Caption}" Style="{StaticResource SectionCaptionStyle}" />
+                </StackPanel>
+                <Button HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Command="{x:Bind ViewModel.AddGifsCommand}"
+                        BorderThickness="1" CornerRadius="8" Padding="12,7">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <FontIcon Glyph="&#xE898;" FontSize="13" />
+                        <TextBlock Text="{loc:Loc Key=Idle_Upload}" FontSize="12" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- Hero: the selected GIF previewed inside a round "GC9A01" bezel -->
+            <Border Style="{StaticResource CardStyle}"
+                    Visibility="{x:Bind ViewModel.SelectedGif, Mode=OneWay,
+                                 Converter={StaticResource NullToCollapsed}}">
+                <StackPanel Orientation="Horizontal" Spacing="20">
+
+                    <!-- Device bezel: dark ring around a circular screen crop -->
+                    <Grid Width="150" Height="150">
+                        <Ellipse Fill="#050506"
+                                 Stroke="{StaticResource StrokeStrongBrush}" StrokeThickness="1" />
+                        <Ellipse Width="126" Height="126">
+                            <Ellipse.Fill>
+                                <ImageBrush ImageSource="{x:Bind ViewModel.SelectedGif.Source, Mode=OneWay}"
+                                            Stretch="UniformToFill" />
+                            </Ellipse.Fill>
+                        </Ellipse>
+                    </Grid>
+
+                    <StackPanel VerticalAlignment="Center" Spacing="6">
+                        <Border Background="{StaticResource AccentSubtleBrush}"
+                                BorderBrush="{StaticResource AccentStrokeBrush}" BorderThickness="1"
+                                CornerRadius="20" Padding="9,3" HorizontalAlignment="Left">
+                            <TextBlock Text="{loc:Loc Key=Idle_Selected}"
+                                       Foreground="{StaticResource AccentTextBrush}" FontSize="11" />
+                        </Border>
+                        <TextBlock Text="{x:Bind ViewModel.SelectedGif.OriginalName, Mode=OneWay}"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   FontSize="15" FontWeight="SemiBold" />
+                        <TextBlock Text="{x:Bind ViewModel.SelectedGif.DetailText, Mode=OneWay}"
+                                   Foreground="{StaticResource TextTertiaryBrush}" FontSize="12" />
+
+                        <ProgressBar Minimum="0" Maximum="1"
+                                     Value="{x:Bind ViewModel.UploadProgress, Mode=OneWay}"
+                                     Width="220" HorizontalAlignment="Left" Margin="0,4,0,0"
+                                     Visibility="{x:Bind ViewModel.IsUploading, Mode=OneWay,
+                                                  Converter={StaticResource BoolToVisible}}" />
+                        <TextBlock Text="{x:Bind ViewModel.UploadStatus, Mode=OneWay}"
+                                   Foreground="{StaticResource TextTertiaryBrush}" FontSize="12" TextWrapping="Wrap"
+                                   Visibility="{x:Bind ViewModel.UploadStatus, Mode=OneWay,
+                                                Converter={StaticResource StringToVisible}}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Hero: empty state -->
+            <Border Style="{StaticResource CardStyle}" Padding="24"
+                    Visibility="{x:Bind ViewModel.SelectedGif, Mode=OneWay,
+                                 Converter={StaticResource NullToVisible}}">
+                <StackPanel HorizontalAlignment="Center" Spacing="10">
+                    <Grid Width="90" Height="90" HorizontalAlignment="Center">
+                        <Ellipse Fill="#050506"
+                                 Stroke="{StaticResource StrokeStrongBrush}" StrokeThickness="1" />
+                        <FontIcon Glyph="&#xEB9F;" FontSize="26"
+                                  Foreground="{StaticResource TextDisabledBrush}" />
+                    </Grid>
+                    <TextBlock Text="{loc:Loc Key=Idle_EmptyTitle}"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="14" HorizontalAlignment="Center" />
+                    <TextBlock Text="{loc:Loc Key=Idle_EmptyDesc}"
+                               Foreground="{StaticResource TextTertiaryBrush}"
+                               FontSize="12" HorizontalAlignment="Center" TextAlignment="Center" />
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="{x:Bind ViewModel.UsageText, Mode=OneWay}"
+                       Style="{StaticResource FieldHelpStyle}" />
+
+            <!-- Library: circular previews matching the round display -->
+            <ItemsRepeater ItemsSource="{x:Bind ViewModel.Gifs}">
+                <ItemsRepeater.Layout>
+                    <UniformGridLayout MinItemWidth="132" MinItemHeight="176"
+                                       MinColumnSpacing="10" MinRowSpacing="14"
+                                       ItemsStretch="Fill" />
+                </ItemsRepeater.Layout>
+                <ItemsRepeater.ItemTemplate>
+                    <DataTemplate x:DataType="vm:IdleGifViewModel">
+                        <StackPanel Spacing="8" HorizontalAlignment="Center" Padding="0,4">
+                            <Grid Width="104" Height="104" HorizontalAlignment="Center">
+                                <Ellipse Stroke="{x:Bind IsSelected, Mode=OneWay,
+                                                  Converter={StaticResource SelectedToBorderBrush}}"
+                                         StrokeThickness="2"
+                                         Fill="#050506" />
+                                <Ellipse Width="92" Height="92">
+                                    <Ellipse.Fill>
+                                        <ImageBrush ImageSource="{x:Bind Source}" Stretch="UniformToFill" />
+                                    </Ellipse.Fill>
+                                </Ellipse>
+                            </Grid>
+                            <TextBlock Text="{x:Bind OriginalName}"
+                                       Foreground="{StaticResource TextSecondaryBrush}" FontSize="11"
+                                       TextTrimming="CharacterEllipsis" TextAlignment="Center"
+                                       MaxWidth="120" HorizontalAlignment="Center" />
+                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                <Button Padding="7" CornerRadius="8" BorderThickness="1"
+                                        Tag="{x:Bind}" Click="OnSetActiveClick"
+                                        ToolTipService.ToolTip="{loc:Loc Key=Idle_SetActive_Tip}">
+                                    <FontIcon Glyph="&#xE73E;" FontSize="12" />
+                                </Button>
+                                <Button Padding="7" CornerRadius="8" BorderThickness="1"
+                                        Tag="{x:Bind}" Click="OnDeleteClick"
+                                        ToolTipService.ToolTip="{loc:Loc Key=Idle_Delete_Tip}">
+                                    <FontIcon Glyph="&#xE74D;" FontSize="12" />
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

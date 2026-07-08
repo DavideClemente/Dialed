@@ -5,136 +5,271 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:models="using:AudioMixerWin.Core.Models"
     xmlns:converters="using:AudioMixerWin.Core.Converters"
+    xmlns:loc="using:AudioMixerWin.Core.Services"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
     <Page.Resources>
         <converters:ProcessNameDisplayConverter x:Key="ProcessNameDisplay" />
+
+        <!-- Page-local aliases for the app-wide tokens (Themes/Tokens.xaml),
+             preserving the tighter caption-under-title spacing. -->
+        <Style x:Key="SectionTitle" TargetType="TextBlock" BasedOn="{StaticResource SectionTitleStyle}" />
+        <Style x:Key="SectionCaption" TargetType="TextBlock" BasedOn="{StaticResource SectionCaptionStyle}">
+            <Setter Property="Margin" Value="0,-8,0,0" />
+        </Style>
+        <Style x:Key="FieldLabel" TargetType="TextBlock" BasedOn="{StaticResource FieldLabelStyle}" />
+        <Style x:Key="FieldHelp" TargetType="TextBlock" BasedOn="{StaticResource FieldHelpStyle}" />
+        <Style x:Key="Card" TargetType="Border" BasedOn="{StaticResource CardStyle}" />
     </Page.Resources>
 
     <ScrollViewer>
-        <StackPanel Padding="24" Spacing="8" MaxWidth="600" HorizontalAlignment="Left">
+        <StackPanel Padding="24" Spacing="10" MaxWidth="640" HorizontalAlignment="Left">
 
-            <TextBlock Text="Serial Connection" FontSize="20" FontWeight="SemiBold"
-                       FontFamily="Segoe UI Variable Display" Foreground="#E0E0E0" Margin="0,0,0,8" />
+            <!-- ==================== General ==================== -->
+            <TextBlock Text="{loc:Loc Key=Settings_General_Title}" Style="{StaticResource SectionTitle}" />
+            <TextBlock Text="{loc:Loc Key=Settings_General_Caption}"
+                       Style="{StaticResource SectionCaption}" />
 
-            <TextBlock Text="COM Port" />
-            <ComboBox
-                x:Name="ComPortCombo"
-                ItemsSource="{x:Bind PortInfos}"
-                SelectedValuePath="Port"
-                SelectedValue="{x:Bind ViewModel.ComPort, Mode=TwoWay}"
-                DisplayMemberPath="DisplayText"
-                HorizontalAlignment="Stretch" />
+            <Border Style="{StaticResource Card}" Margin="0,6,0,0">
+                <StackPanel Spacing="14">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{loc:Loc Key=Settings_Language_Label}" Style="{StaticResource FieldLabel}" />
+                        <TextBlock Text="{loc:Loc Key=Settings_Language_Desc}" Style="{StaticResource FieldHelp}" />
+                        <ComboBox
+                            ItemsSource="{x:Bind ViewModel.LanguageOptions}"
+                            DisplayMemberPath="DisplayName"
+                            SelectedValuePath="Code"
+                            SelectedValue="{x:Bind ViewModel.Language, Mode=TwoWay}"
+                            HorizontalAlignment="Stretch" />
+                    </StackPanel>
 
-            <TextBlock Text="Baud Rate" Margin="0,12,0,0" />
-            <ComboBox
-                ItemsSource="{x:Bind BaudRates}"
-                SelectedItem="{x:Bind ViewModel.BaudRate, Mode=TwoWay}"
-                HorizontalAlignment="Stretch" />
+                    <InfoBar Severity="Informational" IsClosable="False"
+                             IsOpen="{x:Bind ViewModel.LanguageRestartPending, Mode=OneWay}"
+                             Message="{loc:Loc Key=Settings_Language_Restart}" />
 
-            <TextBlock Text="Input Type" Margin="0,12,0,0" />
-            <ComboBox
-                x:Name="InputModeCombo"
-                HorizontalAlignment="Stretch"
-                SelectedIndex="{x:Bind ViewModel.InputModeIndex, Mode=TwoWay}">
-                <ComboBoxItem Content="Potentiometer (absolute)" />
-                <ComboBoxItem Content="Rotary Encoder (relative)" />
-            </ComboBox>
+                    <Border Style="{StaticResource CardDividerStyle}" />
 
-            <StackPanel
-                Visibility="{x:Bind ViewModel.IsRotaryEncoder, Mode=OneWay}"
-                Spacing="4" Margin="0,8,0,0">
-                <TextBlock Text="Step per tick (%)" />
-                <NumberBox
-                    Value="{x:Bind ViewModel.EncoderStepPercent, Mode=TwoWay}"
-                    Minimum="0.5"
-                    Maximum="20"
-                    SpinButtonPlacementMode="Inline"
-                    HorizontalAlignment="Stretch" />
-            </StackPanel>
+                    <StackPanel Spacing="6">
+                        <ToggleSwitch
+                            Header="{loc:Loc Key=Settings_StartWithWindows}"
+                            IsOn="{x:Bind ViewModel.StartWithWindows, Mode=TwoWay}" />
+                        <TextBlock Text="{loc:Loc Key=Settings_StartWithWindows_Desc}"
+                                   Style="{StaticResource FieldHelp}" Margin="0,-4,0,0" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
 
-            <Button Content="Reconnect" Command="{x:Bind ViewModel.ReconnectCommand}"
-                    Margin="0,16,0,0" BorderThickness="1" CornerRadius="8">
-                <Button.Resources>
-                    <SolidColorBrush x:Key="ButtonBackground" Color="#1C1C1C"/>
-                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#282828"/>
-                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#111111"/>
-                    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#383838"/>
-                    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#505050"/>
-                    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#282828"/>
-                    <SolidColorBrush x:Key="ButtonForeground" Color="#C8C8C8"/>
-                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#F0F0F0"/>
-                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#A0A0A0"/>
-                </Button.Resources>
-            </Button>
+            <!-- ==================== Serial Connection ==================== -->
+            <TextBlock Text="{loc:Loc Key=Settings_Serial_Title}" Style="{StaticResource SectionTitle}" Margin="0,20,0,0" />
+            <TextBlock Text="{loc:Loc Key=Settings_Serial_Caption}"
+                       Style="{StaticResource SectionCaption}" />
 
-            <TextBlock Text="{x:Bind ViewModel.SerialStatus, Mode=OneWay}" Opacity="0.7" Margin="0,8,0,0" />
+            <Border Style="{StaticResource Card}" Margin="0,6,0,0">
+                <StackPanel Spacing="14">
+                    <Grid ColumnSpacing="14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
 
-            <ToggleSwitch
-                Header="Debug serial events"
-                IsOn="{x:Bind ViewModel.DebugSerialEvents, Mode=TwoWay}"
-                Margin="0,16,0,0" />
+                        <StackPanel Grid.Column="0" Spacing="6">
+                            <TextBlock Text="{loc:Loc Key=Settings_ComPort}" Style="{StaticResource FieldLabel}" />
+                            <ComboBox
+                                x:Name="ComPortCombo"
+                                SelectedValuePath="Port"
+                                DisplayMemberPath="DisplayText"
+                                SelectionChanged="OnComPortSelectionChanged"
+                                HorizontalAlignment="Stretch" />
+                        </StackPanel>
 
-            <ListView
-                Visibility="{x:Bind ViewModel.DebugSerialEvents, Mode=OneWay}"
-                ItemsSource="{x:Bind ViewModel.SerialLog}"
-                MaxHeight="200"
-                IsHitTestVisible="False"
-                FontFamily="Consolas"
-                FontSize="12">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="Padding" Value="0,1" />
-                        <Setter Property="MinHeight" Value="0" />
-                    </Style>
-                </ListView.ItemContainerStyle>
-            </ListView>
+                        <StackPanel Grid.Column="1" Spacing="6">
+                            <TextBlock Text="{loc:Loc Key=Settings_BaudRate}" Style="{StaticResource FieldLabel}" />
+                            <ComboBox
+                                ItemsSource="{x:Bind BaudRates}"
+                                SelectedItem="{x:Bind ViewModel.BaudRate, Mode=TwoWay}"
+                                HorizontalAlignment="Stretch" />
+                        </StackPanel>
+                    </Grid>
 
-            <TextBlock Text="Audio Sessions" FontSize="20" FontWeight="SemiBold"
-                       FontFamily="Segoe UI Variable Display" Foreground="#E0E0E0" Margin="0,24,0,8" />
+                    <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                        <Button Content="{loc:Loc Key=Settings_Reconnect}" Command="{x:Bind ViewModel.ReconnectCommand}"
+                                BorderThickness="1" CornerRadius="8" />
+                        <TextBlock Text="{x:Bind ViewModel.SerialStatus, Mode=OneWay}"
+                                   Opacity="0.7" VerticalAlignment="Center" TextWrapping="Wrap" />
+                    </StackPanel>
 
-            <TextBlock Text="Refresh Interval (seconds)" />
-            <NumberBox
-                Value="{x:Bind ViewModel.RefreshIntervalSeconds, Mode=TwoWay}"
-                Minimum="1"
-                Maximum="30"
-                SpinButtonPlacementMode="Inline"
-                HorizontalAlignment="Stretch" />
+                    <Border Style="{StaticResource CardDividerStyle}" />
 
-            <TextBlock Text="Visible (tap Hide to exclude from app pickers)" Opacity="0.7" Margin="0,16,0,0" />
-            <InfoBar x:Name="HideInfoBar" Severity="Warning" IsOpen="False" IsClosable="True" />
-            <ListView ItemsSource="{x:Bind ViewModel.AvailableSessions}" MaxHeight="200">
-                <ListView.ItemTemplate>
-                    <DataTemplate x:DataType="models:AudioSession">
-                        <Grid ColumnSpacing="8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="{x:Bind DisplayName}" VerticalAlignment="Center" />
-                            <Button Grid.Column="1" Content="Hide" Tag="{x:Bind}" Click="OnHideClick" />
-                        </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                    <StackPanel Spacing="6">
+                        <ToggleSwitch
+                            Header="{loc:Loc Key=Settings_AutoReconnect}"
+                            IsOn="{x:Bind ViewModel.AutoReconnect, Mode=TwoWay}" />
+                        <TextBlock Text="{loc:Loc Key=Settings_AutoReconnect_Desc}"
+                                   Style="{StaticResource FieldHelp}" Margin="0,-4,0,0" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
 
-            <TextBlock Text="Hidden (tap Show to restore)" Opacity="0.7" Margin="0,12,0,0" />
-            <ListView ItemsSource="{x:Bind ViewModel.HiddenProcesses}" MaxHeight="200">
-                <ListView.ItemTemplate>
-                    <DataTemplate x:DataType="x:String">
-                        <Grid ColumnSpacing="8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="{Binding Converter={StaticResource ProcessNameDisplay}}" VerticalAlignment="Center" />
-                            <Button Grid.Column="1" Content="Show" Tag="{x:Bind}" Click="OnShowClick" />
-                        </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+            <!-- ==================== Controller ==================== -->
+            <TextBlock Text="{loc:Loc Key=Settings_Controller_Title}" Style="{StaticResource SectionTitle}" Margin="0,20,0,0" />
+            <TextBlock Text="{loc:Loc Key=Settings_Controller_Caption}"
+                       Style="{StaticResource SectionCaption}" />
+
+            <Border Style="{StaticResource Card}" Margin="0,6,0,0">
+                <StackPanel Spacing="14">
+                    <Grid ColumnSpacing="14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Spacing="6">
+                            <TextBlock Text="{loc:Loc Key=Settings_InputType}" Style="{StaticResource FieldLabel}" />
+                            <ComboBox
+                                x:Name="InputModeCombo"
+                                HorizontalAlignment="Stretch"
+                                SelectedIndex="{x:Bind ViewModel.InputModeIndex, Mode=TwoWay}">
+                                <ComboBoxItem Content="{loc:Loc Key=Settings_Input_Pot}" />
+                                <ComboBoxItem Content="{loc:Loc Key=Settings_Input_Encoder}" />
+                            </ComboBox>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Spacing="6">
+                            <TextBlock Text="{loc:Loc Key=Settings_KnobCount}" Style="{StaticResource FieldLabel}" />
+                            <NumberBox
+                                Value="{x:Bind ViewModel.KnobCount, Mode=TwoWay}"
+                                Minimum="1"
+                                Maximum="16"
+                                SpinButtonPlacementMode="Inline"
+                                HorizontalAlignment="Stretch" />
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel
+                        Visibility="{x:Bind ViewModel.IsRotaryEncoder, Mode=OneWay}"
+                        Spacing="6">
+                        <TextBlock Text="{loc:Loc Key=Settings_StepPerTick}" Style="{StaticResource FieldLabel}" />
+                        <NumberBox
+                            Value="{x:Bind ViewModel.EncoderStepPercent, Mode=TwoWay}"
+                            Minimum="0.5"
+                            Maximum="20"
+                            SpinButtonPlacementMode="Inline"
+                            HorizontalAlignment="Stretch" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{loc:Loc Key=Settings_IdleTimeout}" Style="{StaticResource FieldLabel}" />
+                        <TextBlock Text="{loc:Loc Key=Settings_IdleTimeout_Desc}" Style="{StaticResource FieldHelp}" />
+                        <NumberBox
+                            Value="{x:Bind ViewModel.IdleTimeoutSeconds, Mode=TwoWay}"
+                            Minimum="1"
+                            Maximum="3600"
+                            SpinButtonPlacementMode="Inline"
+                            HorizontalAlignment="Stretch" />
+                    </StackPanel>
+
+                    <Border Style="{StaticResource CardDividerStyle}" Margin="0,2,0,0" />
+
+                    <ToggleSwitch
+                        Header="{loc:Loc Key=Settings_ShowPercent}"
+                        IsOn="{x:Bind ViewModel.ShowPercentSign, Mode=TwoWay}" />
+                </StackPanel>
+            </Border>
+
+            <!-- ==================== Audio Sessions ==================== -->
+            <TextBlock Text="{loc:Loc Key=Settings_Audio_Title}" Style="{StaticResource SectionTitle}" Margin="0,20,0,0" />
+            <TextBlock Text="{loc:Loc Key=Settings_Audio_Caption}"
+                       Style="{StaticResource SectionCaption}" />
+
+            <Border Style="{StaticResource Card}" Margin="0,6,0,0">
+                <StackPanel Spacing="14">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{loc:Loc Key=Settings_RefreshInterval}" Style="{StaticResource FieldLabel}" />
+                        <NumberBox
+                            Value="{x:Bind ViewModel.RefreshIntervalSeconds, Mode=TwoWay}"
+                            Minimum="1"
+                            Maximum="30"
+                            SpinButtonPlacementMode="Inline"
+                            HorizontalAlignment="Stretch" />
+                    </StackPanel>
+
+                    <InfoBar x:Name="HideInfoBar" Severity="Warning" IsOpen="False" IsClosable="True" />
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{loc:Loc Key=Settings_Visible}" Style="{StaticResource FieldLabel}" />
+                        <TextBlock Text="{loc:Loc Key=Settings_Visible_Desc}" Style="{StaticResource FieldHelp}" />
+                        <ListView ItemsSource="{x:Bind ViewModel.AvailableSessions}" MaxHeight="200"
+                                  Background="{StaticResource SurfaceBackgroundBrush}" CornerRadius="8" BorderBrush="{StaticResource StrokeDefaultBrush}" BorderThickness="1">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="models:AudioSession">
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{x:Bind DisplayName}" VerticalAlignment="Center" />
+                                        <Button Grid.Column="1" Content="{loc:Loc Key=Common_Hide}" Tag="{x:Bind}" Click="OnHideClick" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{loc:Loc Key=Settings_Hidden}" Style="{StaticResource FieldLabel}" />
+                        <TextBlock Text="{loc:Loc Key=Settings_Hidden_Desc}" Style="{StaticResource FieldHelp}" />
+                        <ListView ItemsSource="{x:Bind ViewModel.HiddenProcesses}" MaxHeight="200"
+                                  Background="{StaticResource SurfaceBackgroundBrush}" CornerRadius="8" BorderBrush="{StaticResource StrokeDefaultBrush}" BorderThickness="1">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Converter={StaticResource ProcessNameDisplay}}" VerticalAlignment="Center" />
+                                        <Button Grid.Column="1" Content="{loc:Loc Key=Common_Show}" Tag="{x:Bind}" Click="OnShowClick" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- ==================== Diagnostics ==================== -->
+            <TextBlock Text="{loc:Loc Key=Settings_Diagnostics_Title}" Style="{StaticResource SectionTitle}" Margin="0,20,0,0" />
+            <TextBlock Text="{loc:Loc Key=Settings_Diagnostics_Caption}"
+                       Style="{StaticResource SectionCaption}" />
+
+            <Border Style="{StaticResource Card}" Margin="0,6,0,0">
+                <StackPanel Spacing="14">
+                    <ToggleSwitch
+                        Header="{loc:Loc Key=Settings_DebugSerial}"
+                        IsOn="{x:Bind ViewModel.DebugSerialEvents, Mode=TwoWay}" />
+
+                    <ListView
+                        Visibility="{x:Bind ViewModel.DebugSerialEvents, Mode=OneWay}"
+                        ItemsSource="{x:Bind ViewModel.SerialLog}"
+                        MaxHeight="200"
+                        IsHitTestVisible="False"
+                        Background="{StaticResource SurfaceBackgroundBrush}"
+                        CornerRadius="8"
+                        BorderBrush="{StaticResource StrokeDefaultBrush}"
+                        BorderThickness="1"
+                        FontFamily="Consolas"
+                        FontSize="12">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="Padding" Value="8,1" />
+                                <Setter Property="MinHeight" Value="0" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                    </ListView>
+                </StackPanel>
+            </Border>
 
         </StackPanel>
     </ScrollViewer>

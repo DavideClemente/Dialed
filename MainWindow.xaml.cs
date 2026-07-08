@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
+using AudioMixerWin.Core.Services;
 using AudioMixerWin.Core.ViewModels;
 using AudioMixerWin.Core.Views;
 using CommunityToolkit.Mvvm.Input;
@@ -10,6 +13,8 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Windows.Storage;
+using Windows.Storage.Pickers;
 using Windows.UI;
 using WinRT.Interop;
 
@@ -35,21 +40,26 @@ namespace AudioMixerWin
         [DllImport("user32.dll")]
         private static extern IntPtr SetClassLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
 
-        private const double MinPaneWidth = 200;
-        private const double MaxPaneWidth = 400;
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        private const int SW_RESTORE = 9;
 
         public MainViewModel ViewModel { get; } = new();
 
         private readonly MainPage _mainPage;
         private readonly SettingsPage _settingsPage;
+        private readonly OutputPage _outputPage;
+        private IdleScreenPage _idleScreenPage = null!;
         private readonly AppWindow _appWindow;
         private readonly TaskbarIcon _trayIcon;
         private readonly string _iconPath;
         private readonly IntPtr _hwnd;
-
-        private bool _isDraggingSplitter;
-        private double _dragStartX;
-        private double _dragStartWidth;
 
         public MainWindow()
         {
@@ -74,39 +84,59 @@ namespace AudioMixerWin
                 Icon = new System.Drawing.Icon(_iconPath),
                 LeftClickCommand = new RelayCommand(RestoreWindow),
                 DoubleClickCommand = new RelayCommand(RestoreWindow),
+                ContextMenuMode = ContextMenuMode.PopupMenu,
+                ContextFlyout = BuildTrayMenu(),
             };
             _trayIcon.ForceCreate(enablesEfficiencyMode: false);
 
             _mainPage = new MainPage(ViewModel);
             _settingsPage = new SettingsPage(ViewModel);
+            _outputPage = new OutputPage(ViewModel.Output);
+            ViewModel.InitIdleScreen(PickGifFilesAsync, () => Content?.XamlRoot);
+            _idleScreenPage = new IdleScreenPage(ViewModel.IdleScreen!);
 
             ContentFrame.Content = _mainPage;
 
-            NavView.OpenPaneLength = ViewModel.NavPaneWidth;
-            PositionSplitter(ViewModel.NavPaneWidth);
+            // The built-in settings item's label follows the OS language even with a
+            // language override, so give it explicit English content. SettingsItem is
+            // only realized once the control template is applied (on Loaded).
+            NavView.Loaded += OnNavViewLoaded;
         }
 
         private void ConfigureTitleBar()
         {
+            // The XAML title bar row replaces the system one; caption buttons sit
+            // transparently on top of the Mica backdrop.
+            ExtendsContentIntoTitleBar = true;
+            SetTitleBar(AppTitleBar);
+
             var titleBar = _appWindow.TitleBar;
-            var bg = Color.FromArgb(255, 10, 10, 10);
             var fg = Color.FromArgb(255, 230, 230, 230);
-            var fgMuted = Color.FromArgb(255, 80, 80, 80);
-            var hover = Color.FromArgb(255, 28, 28, 28);
-            var pressed = Color.FromArgb(255, 18, 18, 18);
-            titleBar.BackgroundColor = bg;
-            titleBar.ForegroundColor = fg;
-            titleBar.InactiveBackgroundColor = bg;
-            titleBar.InactiveForegroundColor = fgMuted;
-            titleBar.ButtonBackgroundColor = bg;
+            var fgMuted = Color.FromArgb(255, 106, 106, 116);
+            titleBar.ButtonBackgroundColor = Colors.Transparent;
             titleBar.ButtonForegroundColor = fg;
-            titleBar.ButtonHoverBackgroundColor = hover;
+            titleBar.ButtonHoverBackgroundColor = Color.FromArgb(255, 35, 35, 41);
             titleBar.ButtonHoverForegroundColor = fg;
-            titleBar.ButtonPressedBackgroundColor = pressed;
+            titleBar.ButtonPressedBackgroundColor = Color.FromArgb(255, 27, 27, 32);
             titleBar.ButtonPressedForegroundColor = fgMuted;
-            titleBar.ButtonInactiveBackgroundColor = bg;
+            titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
             titleBar.ButtonInactiveForegroundColor = fgMuted;
         }
+
+        // Status-pill palette: mint when the controller is connected, amber otherwise.
+        private static readonly SolidColorBrush PillBgConnected = new(Color.FromArgb(255, 20, 32, 26));
+        private static readonly SolidColorBrush PillBgDisconnected = new(Color.FromArgb(255, 26, 20, 0));
+        private static readonly SolidColorBrush PillStrokeConnected = new(Color.FromArgb(255, 30, 58, 44));
+        private static readonly SolidColorBrush PillStrokeDisconnected = new(Color.FromArgb(255, 58, 46, 16));
+        private static readonly SolidColorBrush PillFgConnected = new(Color.FromArgb(255, 127, 214, 172));
+        private static readonly SolidColorBrush PillFgDisconnected = new(Color.FromArgb(255, 184, 149, 48));
+        private static readonly SolidColorBrush PillDotConnected = new(Color.FromArgb(255, 52, 211, 153));
+        private static readonly SolidColorBrush PillDotDisconnected = new(Color.FromArgb(255, 184, 149, 48));
+
+        public SolidColorBrush PillBackground(bool connected) => connected ? PillBgConnected : PillBgDisconnected;
+        public SolidColorBrush PillStroke(bool connected) => connected ? PillStrokeConnected : PillStrokeDisconnected;
+        public SolidColorBrush PillText(bool connected) => connected ? PillFgConnected : PillFgDisconnected;
+        public SolidColorBrush PillDot(bool connected) => connected ? PillDotConnected : PillDotDisconnected;
 
         private async void OnWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
         {
@@ -114,11 +144,11 @@ namespace AudioMixerWin
 
             var dialog = new ContentDialog
             {
-                Title = "Close Audio Mixer",
-                Content = "Do you want to close the app or minimize it to the system tray?",
-                PrimaryButtonText = "Close",
-                SecondaryButtonText = "Minimize to Tray",
-                CloseButtonText = "Cancel",
+                Title = Loc.Get("Close_Title"),
+                Content = Loc.Get("Close_Content"),
+                PrimaryButtonText = Loc.Get("Close_Primary"),
+                SecondaryButtonText = Loc.Get("Close_Secondary"),
+                CloseButtonText = Loc.Get("Common_Cancel"),
                 XamlRoot = Content.XamlRoot,
                 DefaultButton = ContentDialogButton.Secondary,
             };
@@ -143,14 +173,94 @@ namespace AudioMixerWin
             }
         }
 
+        private MenuFlyout BuildTrayMenu()
+        {
+            var menu = new MenuFlyout();
+
+            void AddItem(string text, Action action)
+            {
+                // PopupMenu (native Win32) mode invokes Command, not the XAML
+                // Click event, so bind the action as a RelayCommand.
+                menu.Items.Add(new MenuFlyoutItem
+                {
+                    Text = text,
+                    Command = new RelayCommand(action),
+                });
+            }
+
+            AddItem(Loc.Get("Tray_Open"), RestoreWindow);
+            menu.Items.Add(new MenuFlyoutSeparator());
+            AddItem(Loc.Get("Nav_Mixer"), () => ShowPage("mixer"));
+            AddItem(Loc.Get("Nav_IdleScreen"), () => ShowPage("idle"));
+            AddItem(Loc.Get("Nav_Output"), () => ShowPage("output"));
+            AddItem(Loc.Get("Nav_Settings"), () => ShowPage("settings"));
+            menu.Items.Add(new MenuFlyoutSeparator());
+            AddItem(Loc.Get("Tray_Quit"), ExitApp);
+
+            return menu;
+        }
+
+        // Navigates the window to a page by NavigationViewItem tag ("settings"
+        // targets the built-in settings item) and brings the window forward.
+        private void ShowPage(string tag)
+        {
+            RestoreWindow();
+
+            if (tag == "settings")
+            {
+                NavView.SelectedItem = NavView.SettingsItem;
+                return;
+            }
+
+            foreach (var menuItem in NavView.MenuItems)
+            {
+                if (menuItem is NavigationViewItem nvi && nvi.Tag as string == tag)
+                {
+                    NavView.SelectedItem = nvi;
+                    break;
+                }
+            }
+        }
+
         private void MinimizeToTray() => WindowExtensions.Hide(this);
 
-        private void RestoreWindow() => WindowExtensions.Show(this);
+        /// <summary>
+        /// Brings the app up hidden in the tray without ever showing the window
+        /// (used for the --minimized auto-start launch). The tray icon is already
+        /// created in the constructor, so the app remains reachable.
+        /// </summary>
+        public void HideToTray() => WindowExtensions.Hide(this);
+
+        private void RestoreWindow()
+        {
+            WindowExtensions.Show(this);
+
+            // Showing a hidden window leaves it minimized/behind other windows.
+            // Restore the presenter, then force it to the foreground. The click
+            // on the tray icon gives our process foreground rights, so
+            // SetForegroundWindow succeeds here.
+            if (_appWindow.Presenter is OverlappedPresenter p &&
+                p.State == OverlappedPresenterState.Minimized)
+            {
+                p.Restore();
+            }
+
+            ShowWindow(_hwnd, SW_RESTORE);
+            this.Activate();
+            SetForegroundWindow(_hwnd);
+        }
 
         private void ExitApp()
         {
             _trayIcon.Dispose();
             Application.Current.Exit();
+        }
+
+        private void OnNavViewLoaded(object sender, RoutedEventArgs e)
+        {
+            NavView.Loaded -= OnNavViewLoaded;
+            if (NavView.SettingsItem is NavigationViewItem settingsItem)
+                settingsItem.Content = Loc.Get("Nav_Settings");
         }
 
         private void OnFirstActivated(object sender, WindowActivatedEventArgs args)
@@ -166,61 +276,38 @@ namespace AudioMixerWin
 
         private void OnNavSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
-            ContentFrame.Content = args.IsSettingsSelected ? _settingsPage : _mainPage;
-        }
-
-        private void PositionSplitter(double paneWidth) =>
-            PaneSplitter.Margin = new Thickness(paneWidth - PaneSplitter.Width / 2, 0, 0, 0);
-
-        private void OnSplitterPointerEntered(object sender, PointerRoutedEventArgs e) =>
-            PaneSplitter.Background = new SolidColorBrush(Colors.Gray) { Opacity = 0.3 };
-
-        private void OnSplitterPointerExited(object sender, PointerRoutedEventArgs e)
-        {
-            if (!_isDraggingSplitter)
-                PaneSplitter.Background = new SolidColorBrush(Colors.Transparent);
-        }
-
-        private void OnSplitterPointerPressed(object sender, PointerRoutedEventArgs e)
-        {
-            _isDraggingSplitter = true;
-            _dragStartX = e.GetCurrentPoint(Content).Position.X;
-            _dragStartWidth = NavView.OpenPaneLength;
-            PaneSplitter.CapturePointer(e.Pointer);
-        }
-
-        private void OnSplitterPointerMoved(object sender, PointerRoutedEventArgs e)
-        {
-            if (!_isDraggingSplitter)
+            if (args.IsSettingsSelected)
+            {
+                ContentFrame.Content = _settingsPage;
                 return;
+            }
 
-            var currentX = e.GetCurrentPoint(Content).Position.X;
-            var newWidth = Math.Clamp(_dragStartWidth + (currentX - _dragStartX), MinPaneWidth, MaxPaneWidth);
-            NavView.OpenPaneLength = newWidth;
-            PositionSplitter(newWidth);
+            var tag = (args.SelectedItem as NavigationViewItem)?.Tag as string;
+            ContentFrame.Content = tag switch
+            {
+                "idle" => _idleScreenPage,
+                "output" => _outputPage,
+                _ => _mainPage,
+            };
         }
 
-        private void OnSplitterPointerReleased(object sender, PointerRoutedEventArgs e)
+        private async Task<IReadOnlyList<StorageFile>> PickGifFilesAsync()
         {
-            PaneSplitter.ReleasePointerCapture(e.Pointer);
-            EndSplitterDrag();
+            var picker = new FileOpenPicker
+            {
+                ViewMode = PickerViewMode.Thumbnail,
+                SuggestedStartLocation = PickerLocationId.PicturesLibrary,
+            };
+            picker.FileTypeFilter.Add(".gif");
+            picker.FileTypeFilter.Add(".png");
+            picker.FileTypeFilter.Add(".jpg");
+            picker.FileTypeFilter.Add(".jpeg");
+            picker.FileTypeFilter.Add(".bmp");
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, _hwnd);
+
+            var files = await picker.PickMultipleFilesAsync();
+            return files ?? new List<StorageFile>();
         }
 
-        private void OnSplitterPointerCaptureLost(object sender, PointerRoutedEventArgs e)
-        {
-            // PointerCaptureLost means capture is already gone; do not call
-            // ReleasePointerCapture here as it would be redundant/could throw.
-            EndSplitterDrag();
-        }
-
-        private void EndSplitterDrag()
-        {
-            if (!_isDraggingSplitter)
-                return;
-
-            _isDraggingSplitter = false;
-            PaneSplitter.Background = new SolidColorBrush(Colors.Transparent);
-            ViewModel.NavPaneWidth = NavView.OpenPaneLength;
-        }
     }
 }

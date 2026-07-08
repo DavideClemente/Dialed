@@ -14,18 +14,32 @@ public sealed partial class SettingsPage : Page
 
     public ComPortInfo[] PortInfos { get; } = ComPortInfo.GetPorts();
 
-    public int[] BaudRates { get; } = { 9600, 19200, 38400, 57600, 115200 };
+    public int[] BaudRates { get; } = { 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600 };
 
     public SettingsPage(MainViewModel viewModel)
     {
         ViewModel = viewModel;
         InitializeComponent();
 
+        // Assign the port items and selection in code, not via x:Bind: a compiled
+        // ItemsSource binding is only applied during the page's Loading phase, so a
+        // SelectedValue set here (or via a TwoWay binding) would run before the items
+        // exist — leaving the box blank. Setting ItemsSource first, synchronously,
+        // guarantees the saved port resolves.
+        ComPortCombo.ItemsSource = PortInfos;
+        ComPortCombo.SelectedValue = ViewModel.ComPort;
+
         _hideInfoBarTimer.Tick += (_, _) =>
         {
             _hideInfoBarTimer.Stop();
             HideInfoBar.IsOpen = false;
         };
+    }
+
+    private void OnComPortSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ComPortCombo.SelectedValue is string port)
+            ViewModel.ComPort = port;
     }
 
     private void OnHideClick(object sender, RoutedEventArgs e)

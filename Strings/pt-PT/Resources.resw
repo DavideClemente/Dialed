@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- Navigation -->
+  <data name="Nav_Mixer" xml:space="preserve"><value>Mixer</value></data>
+  <data name="Mixer_Caption" xml:space="preserve"><value>Volume por aplicação, sincronizado com os botões</value></data>
+  <data name="Mixer_AddChannel" xml:space="preserve"><value>Adicionar canal</value></data>
+  <data name="Nav_IdleScreen" xml:space="preserve"><value>Ecrã Inativo</value></data>
+  <data name="Nav_Output" xml:space="preserve"><value>Saída</value></data>
+  <data name="Nav_Settings" xml:space="preserve"><value>Definições</value></data>
+
+  <!-- Common -->
+  <data name="Common_Hide" xml:space="preserve"><value>Ocultar</value></data>
+  <data name="Common_Show" xml:space="preserve"><value>Mostrar</value></data>
+  <data name="Common_Cancel" xml:space="preserve"><value>Cancelar</value></data>
+  <data name="Common_Delete" xml:space="preserve"><value>Eliminar</value></data>
+
+  <!-- Settings: General -->
+  <data name="Settings_General_Title" xml:space="preserve"><value>Geral</value></data>
+  <data name="Settings_General_Caption" xml:space="preserve"><value>Preferências globais da aplicação.</value></data>
+  <data name="Settings_Language_Label" xml:space="preserve"><value>Idioma</value></data>
+  <data name="Settings_Language_Desc" xml:space="preserve"><value>Define o idioma dos menus, caixas de diálogo e mensagens de erro.</value></data>
+  <data name="Settings_Language_Restart" xml:space="preserve"><value>Reinicie a aplicação para aplicar a alteração de idioma.</value></data>
+  <data name="Lang_SystemDefault" xml:space="preserve"><value>Predefinição do sistema</value></data>
+  <data name="Settings_StartWithWindows" xml:space="preserve"><value>Iniciar com o Windows</value></data>
+  <data name="Settings_StartWithWindows_Desc" xml:space="preserve"><value>Abrir minimizado na bandeja do sistema ao iniciar sessão.</value></data>
+
+  <!-- Settings: Serial Connection -->
+  <data name="Settings_Serial_Title" xml:space="preserve"><value>Ligação Série</value></data>
+  <data name="Settings_Serial_Caption" xml:space="preserve"><value>Ligue-se ao controlador físico através da respetiva porta COM.</value></data>
+  <data name="Settings_ComPort" xml:space="preserve"><value>Porta COM</value></data>
+  <data name="Settings_BaudRate" xml:space="preserve"><value>Taxa de Transmissão</value></data>
+  <data name="Settings_Reconnect" xml:space="preserve"><value>Religar</value></data>
+  <data name="Settings_AutoReconnect" xml:space="preserve"><value>Religação automática</value></data>
+  <data name="Settings_AutoReconnect_Desc" xml:space="preserve"><value>Religar automaticamente quando o controlador é desligado e ligado novamente.</value></data>
+
+  <!-- Settings: Controller -->
+  <data name="Settings_Controller_Title" xml:space="preserve"><value>Controlador</value></data>
+  <data name="Settings_Controller_Caption" xml:space="preserve"><value>Como o hardware envia comandos e o que apresenta.</value></data>
+  <data name="Settings_InputType" xml:space="preserve"><value>Tipo de Entrada</value></data>
+  <data name="Settings_Input_Pot" xml:space="preserve"><value>Potenciómetro (absoluto)</value></data>
+  <data name="Settings_Input_Encoder" xml:space="preserve"><value>Codificador Rotativo (relativo)</value></data>
+  <data name="Settings_KnobCount" xml:space="preserve"><value>Número de botões</value></data>
+  <data name="Settings_StepPerTick" xml:space="preserve"><value>Incremento por passo (%)</value></data>
+  <data name="Settings_IdleTimeout" xml:space="preserve"><value>Tempo até ecrã inativo (segundos)</value></data>
+  <data name="Settings_IdleTimeout_Desc" xml:space="preserve"><value>Tempo sem atividade nos botões antes de o controlador mostrar o ecrã inativo.</value></data>
+  <data name="Settings_ShowPercent" xml:space="preserve"><value>Mostrar o sinal % no dispositivo</value></data>
+
+  <!-- Settings: Audio Sessions -->
+  <data name="Settings_Audio_Title" xml:space="preserve"><value>Sessões de Áudio</value></data>
+  <data name="Settings_Audio_Caption" xml:space="preserve"><value>Escolha que aplicações aparecem ao mapear botões.</value></data>
+  <data name="Settings_RefreshInterval" xml:space="preserve"><value>Intervalo de atualização (segundos)</value></data>
+  <data name="Settings_Visible" xml:space="preserve"><value>Visíveis</value></data>
+  <data name="Settings_Visible_Desc" xml:space="preserve"><value>Toque em Ocultar para excluir uma aplicação dos seletores de botão.</value></data>
+  <data name="Settings_Hidden" xml:space="preserve"><value>Ocultas</value></data>
+  <data name="Settings_Hidden_Desc" xml:space="preserve"><value>Toque em Mostrar para restaurar uma aplicação.</value></data>
+
+  <!-- Settings: Diagnostics -->
+  <data name="Settings_Diagnostics_Title" xml:space="preserve"><value>Diagnóstico</value></data>
+  <data name="Settings_Diagnostics_Caption" xml:space="preserve"><value>Inspecione o fluxo em bruto do controlador.</value></data>
+  <data name="Settings_DebugSerial" xml:space="preserve"><value>Depurar eventos série</value></data>
+
+  <!-- Output page -->
+  <data name="Output_Title" xml:space="preserve"><value>Saída de Áudio</value></data>
+  <data name="Output_Caption" xml:space="preserve"><value>O interruptor físico alterna o áudio do Windows entre estes dois dispositivos.</value></data>
+  <data name="Output_SwitchPosition" xml:space="preserve"><value>Posição do interruptor</value></data>
+  <data name="Output_PosA_Active" xml:space="preserve"><value>Posição A · ativa</value></data>
+  <data name="Output_PosA" xml:space="preserve"><value>Posição A</value></data>
+  <data name="Output_PosB_Active" xml:space="preserve"><value>Posição B · ativa</value></data>
+  <data name="Output_PosB" xml:space="preserve"><value>Posição B</value></data>
+  <data name="Output_AssignHint" xml:space="preserve"><value>Atribua um dispositivo de reprodução a cada posição</value></data>
+  <data name="Output_SelectDevice" xml:space="preserve"><value>Selecione um dispositivo</value></data>
+  <data name="Output_Active" xml:space="preserve"><value>Ativo</value></data>
+  <data name="Output_SetActive" xml:space="preserve"><value>Ativar</value></data>
+  <data name="Output_ManualHint" xml:space="preserve"><value>Ainda sem interruptor? Toque num cartão de posição acima para encaminhar a saída manualmente.</value></data>
+
+  <!-- Idle screen page -->
+  <data name="Idle_Title" xml:space="preserve"><value>Ecrã Inativo</value></data>
+  <data name="Idle_Upload" xml:space="preserve"><value>Carregar Imagem</value></data>
+  <data name="Idle_Caption" xml:space="preserve"><value>O que o controlador mostra quando nada está a tocar</value></data>
+  <data name="Idle_Selected" xml:space="preserve"><value>Selecionado</value></data>
+  <data name="Idle_EmptyTitle" xml:space="preserve"><value>Nenhuma imagem inativa selecionada</value></data>
+  <data name="Idle_EmptyDesc" xml:space="preserve"><value>Carregue uma imagem ou GIF e selecione-a para a usar como ecrã inativo.</value></data>
+  <data name="Idle_SetActive_Tip" xml:space="preserve"><value>Definir como ecrã inativo</value></data>
+  <data name="Idle_Delete_Tip" xml:space="preserve"><value>Eliminar</value></data>
+
+  <!-- Knob card -->
+  <data name="Knob_Offline" xml:space="preserve"><value>⚡ desligado</value></data>
+  <data name="Knob_Offline_Tip" xml:space="preserve"><value>Placa desligada — configuração guardada, será sincronizada ao religar</value></data>
+  <data name="Knob_NotRunning" xml:space="preserve"><value>● não em execução</value></data>
+  <data name="Knob_NotRunning_Tip" xml:space="preserve"><value>A aplicação não está em execução — o volume não pode ser controlado até ser iniciada</value></data>
+
+  <!-- App picker dialog -->
+  <data name="AppPicker_Title" xml:space="preserve"><value>Selecionar Aplicação</value></data>
+  <data name="AppPicker_Select" xml:space="preserve"><value>Selecionar</value></data>
+  <data name="AppPicker_Remove" xml:space="preserve"><value>Remover Canal</value></data>
+  <data name="AppPicker_Knob" xml:space="preserve"><value>Botão</value></data>
+  <data name="AppPicker_App" xml:space="preserve"><value>Aplicação</value></data>
+
+  <!-- Serial status (code) -->
+  <data name="Serial_NotConnected" xml:space="preserve"><value>Não ligado</value></data>
+  <data name="Serial_Connected" xml:space="preserve"><value>Ligado a {0} @ {1}</value></data>
+  <data name="Serial_Disconnected" xml:space="preserve"><value>Desligado: {0}</value></data>
+  <data name="Serial_DeviceRemoved" xml:space="preserve"><value>Controlador desligado — a aguardar que volte…</value></data>
+
+  <!-- Channel / display (code) -->
+  <data name="Knob_Label" xml:space="preserve"><value>Botão {0}</value></data>
+  <data name="System_DisplayName" xml:space="preserve"><value>Sistema</value></data>
+  <data name="Hide_Blocked" xml:space="preserve"><value>Não é possível ocultar '{0}' — está atribuído a {1}. Desatribua-o primeiro.</value></data>
+
+  <!-- Output (code) -->
+  <data name="Output_NotAssigned" xml:space="preserve"><value>Não atribuído</value></data>
+  <data name="Output_AssignFirst" xml:space="preserve"><value>Atribua primeiro um dispositivo à posição {0}.</value></data>
+  <data name="Output_Switched" xml:space="preserve"><value>Saída → {0}</value></data>
+  <data name="Output_SwitchFailed" xml:space="preserve"><value>Não foi possível mudar para {0} — pode estar desligado.</value></data>
+
+  <!-- Idle screen (code) -->
+  <data name="Idle_SavedOffline" xml:space="preserve"><value>Guardado. Ligue o controlador e selecione novamente esta imagem para a enviar.</value></data>
+  <data name="Idle_Sending" xml:space="preserve"><value>A enviar "{0}" para o controlador…</value></data>
+  <data name="Idle_ActiveOnController" xml:space="preserve"><value>Ativo no controlador</value></data>
+  <data name="Idle_Usage_One" xml:space="preserve"><value>1 imagem · {0}</value></data>
+  <data name="Idle_Usage_Many" xml:space="preserve"><value>{0} imagens · {1}</value></data>
+  <data name="Idle_Delete_Title" xml:space="preserve"><value>Eliminar imagem</value></data>
+  <data name="Idle_Delete_Content" xml:space="preserve"><value>Remover "{0}" da sua biblioteca de ecrã inativo?</value></data>
+
+  <!-- Close / tray (code) -->
+  <data name="Close_Title" xml:space="preserve"><value>Fechar o Audio Mixer</value></data>
+  <data name="Close_Content" xml:space="preserve"><value>Deseja fechar a aplicação ou minimizá-la para a bandeja do sistema?</value></data>
+  <data name="Close_Primary" xml:space="preserve"><value>Fechar</value></data>
+  <data name="Close_Secondary" xml:space="preserve"><value>Minimizar para a bandeja</value></data>
+  <data name="Tray_Open" xml:space="preserve"><value>Abrir o Audio Mixer</value></data>
+  <data name="Tray_Quit" xml:space="preserve"><value>Sair</value></data>
+
+  <!-- GIF upload errors (code) -->
+  <data name="Gif_NotConnected" xml:space="preserve"><value>O controlador não está ligado.</value></data>
+  <data name="Gif_MissingCache" xml:space="preserve"><value>O ficheiro de imagem está em falta na cache da biblioteca.</value></data>
+  <data name="Gif_NoFrames" xml:space="preserve"><value>O GIF não tem fotogramas para enviar.</value></data>
+  <data name="Gif_NoResponse_Cable" xml:space="preserve"><value>Sem resposta do controlador. Verifique o cabo e se a taxa de transmissão do firmware corresponde (921600).</value></data>
+  <data name="Gif_NoResponse_Conn" xml:space="preserve"><value>Sem resposta do controlador. Verifique a ligação e se a taxa de transmissão do firmware corresponde (921600).</value></data>
+  <data name="Gif_Rejected_Partition" xml:space="preserve"><value>O controlador rejeitou o carregamento — o firmware pode não ter partição de armazenamento. Grave um esquema de partições com sistema de ficheiros (por ex. "Default 4MB with spiffs").</value></data>
+  <data name="Gif_NoStorage" xml:space="preserve"><value>O controlador não tem armazenamento livre para a imagem. Grave um esquema de partições com mais espaço de ficheiros.</value></data>
+  <data name="Gif_Unexpected" xml:space="preserve"><value>Resposta inesperada do controlador: {0}</value></data>
+  <data name="Gif_TimedOut" xml:space="preserve"><value>O controlador deixou de responder durante a transferência (tempo esgotado).</value></data>
+  <data name="Gif_TransferError" xml:space="preserve"><value>O controlador reportou um erro durante a transferência — o armazenamento pode estar cheio.</value></data>
+  <data name="Gif_BeforeConfirm" xml:space="preserve"><value>O controlador deixou de responder antes de confirmar o carregamento.</value></data>
+  <data name="Gif_Verify" xml:space="preserve"><value>O carregamento não foi verificado no controlador (tamanho incorreto ou armazenamento cheio).</value></data>
+  <data name="Gif_WriteFailed" xml:space="preserve"><value>Falha na escrita série: {0}</value></data>
+</root>

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
+using AudioMixerWin.Core.Services;
 using Microsoft.UI.Xaml;
 
 namespace AudioMixerWin
@@ -10,6 +12,11 @@ namespace AudioMixerWin
 
         public App()
         {
+            // Apply the saved language override before any UI is created so
+            // framework strings and exception messages honour the choice.
+            try { LocalizationService.Apply(SettingsService.Load().Language); }
+            catch (Exception ex) { Log("Localization", ex); }
+
             InitializeComponent();
 
             AppDomain.CurrentDomain.UnhandledException += (_, e) =>
@@ -40,8 +47,19 @@ namespace AudioMixerWin
         {
             try
             {
-                _window = new MainWindow();
-                _window.Activate();
+                var window = new MainWindow();
+                _window = window;
+
+                // An auto-start launch (Run key adds --minimized) comes up hidden in
+                // the tray. Skipping Activate() avoids a window flash on boot; the tray
+                // icon is created in the MainWindow ctor, so it's available regardless.
+                var startMinimized = Environment.GetCommandLineArgs()
+                    .Any(a => string.Equals(a, StartupService.MinimizedArg, StringComparison.OrdinalIgnoreCase));
+
+                if (startMinimized)
+                    window.HideToTray();
+                else
+                    window.Activate();
             }
             catch (Exception ex)
             {

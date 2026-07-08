@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Design tokens for the whole app ("Carbon, alive" theme).
+  Every page/control references these instead of hardcoding hex values, so the
+  palette can evolve in one place. Lightweight-styling brushes defined here at
+  application scope (Button*, Slider*, ContentDialog*, ListView*) restyle the
+  standard WinUI controls globally — pages must NOT redeclare them.
+-->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ======================= Colors ======================= -->
+
+    <!-- Surfaces: window canvas → card → inset chip → interactive control -->
+    <Color x:Key="SurfaceBackgroundColor">#0D0D0F</Color>
+    <Color x:Key="SurfaceCardColor">#141419</Color>
+    <Color x:Key="SurfaceCardHoverColor">#18181E</Color>
+    <Color x:Key="SurfaceInsetColor">#1B1B20</Color>
+    <Color x:Key="SurfaceControlColor">#232329</Color>
+
+    <!-- Strokes -->
+    <Color x:Key="StrokeSubtleColor">#1D1D22</Color>
+    <Color x:Key="StrokeDefaultColor">#26262C</Color>
+    <Color x:Key="StrokeStrongColor">#2E2E35</Color>
+
+    <!-- Text -->
+    <Color x:Key="TextPrimaryColor">#F2F2F2</Color>
+    <Color x:Key="TextSecondaryColor">#C9C9D1</Color>
+    <Color x:Key="TextTertiaryColor">#8A8A92</Color>
+    <Color x:Key="TextDisabledColor">#55555C</Color>
+
+    <!-- Brand accent (mint) + subtle tint pairing for pills/badges -->
+    <Color x:Key="AccentColor">#34D399</Color>
+    <Color x:Key="AccentTextColor">#7FD6AC</Color>
+    <Color x:Key="AccentSubtleColor">#14201A</Color>
+    <Color x:Key="AccentStrokeColor">#1E3A2C</Color>
+
+    <!-- Semantics -->
+    <Color x:Key="WarningTextColor">#B89530</Color>
+    <Color x:Key="WarningSubtleColor">#1A1400</Color>
+    <Color x:Key="DangerTextColor">#F09595</Color>
+    <Color x:Key="DangerSubtleColor">#1A1414</Color>
+    <Color x:Key="DangerStrokeColor">#8C2020</Color>
+
+    <!-- ======================= Brushes ======================= -->
+
+    <SolidColorBrush x:Key="SurfaceBackgroundBrush" Color="{StaticResource SurfaceBackgroundColor}" />
+    <SolidColorBrush x:Key="SurfaceCardBrush" Color="{StaticResource SurfaceCardColor}" />
+    <SolidColorBrush x:Key="SurfaceCardHoverBrush" Color="{StaticResource SurfaceCardHoverColor}" />
+    <SolidColorBrush x:Key="SurfaceInsetBrush" Color="{StaticResource SurfaceInsetColor}" />
+    <SolidColorBrush x:Key="SurfaceControlBrush" Color="{StaticResource SurfaceControlColor}" />
+
+    <SolidColorBrush x:Key="StrokeSubtleBrush" Color="{StaticResource StrokeSubtleColor}" />
+    <SolidColorBrush x:Key="StrokeDefaultBrush" Color="{StaticResource StrokeDefaultColor}" />
+    <SolidColorBrush x:Key="StrokeStrongBrush" Color="{StaticResource StrokeStrongColor}" />
+
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}" />
+    <SolidColorBrush x:Key="TextTertiaryBrush" Color="{StaticResource TextTertiaryColor}" />
+    <SolidColorBrush x:Key="TextDisabledBrush" Color="{StaticResource TextDisabledColor}" />
+
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+    <SolidColorBrush x:Key="AccentTextBrush" Color="{StaticResource AccentTextColor}" />
+    <SolidColorBrush x:Key="AccentSubtleBrush" Color="{StaticResource AccentSubtleColor}" />
+    <SolidColorBrush x:Key="AccentStrokeBrush" Color="{StaticResource AccentStrokeColor}" />
+
+    <SolidColorBrush x:Key="WarningTextBrush" Color="{StaticResource WarningTextColor}" />
+    <SolidColorBrush x:Key="WarningSubtleBrush" Color="{StaticResource WarningSubtleColor}" />
+    <SolidColorBrush x:Key="DangerTextBrush" Color="{StaticResource DangerTextColor}" />
+    <SolidColorBrush x:Key="DangerSubtleBrush" Color="{StaticResource DangerSubtleColor}" />
+    <SolidColorBrush x:Key="DangerStrokeBrush" Color="{StaticResource DangerStrokeColor}" />
+
+    <!-- ============ Global lightweight styling (standard controls) ============ -->
+
+    <!-- Buttons: quiet dark chip with a hairline border -->
+    <SolidColorBrush x:Key="ButtonBackground" Color="{StaticResource SurfaceControlColor}" />
+    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#2A2A31" />
+    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#1B1B20" />
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="{StaticResource StrokeStrongColor}" />
+    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#3C3C45" />
+    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="{StaticResource StrokeDefaultColor}" />
+    <SolidColorBrush x:Key="ButtonForeground" Color="{StaticResource TextSecondaryColor}" />
+    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="{StaticResource TextPrimaryColor}" />
+    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="{StaticResource TextTertiaryColor}" />
+
+    <!-- ListView rows -->
+    <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="#1E1E24" />
+    <SolidColorBrush x:Key="ListViewItemBackgroundSelected" Color="{StaticResource SurfaceControlColor}" />
+    <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPointerOver" Color="#2A2A31" />
+    <SolidColorBrush x:Key="ListViewItemForeground" Color="{StaticResource TextSecondaryColor}" />
+    <SolidColorBrush x:Key="ListViewItemForegroundSelected" Color="{StaticResource TextPrimaryColor}" />
+
+    <!-- Dialogs -->
+    <SolidColorBrush x:Key="ContentDialogBackground" Color="{StaticResource SurfaceCardColor}" />
+    <SolidColorBrush x:Key="ContentDialogBorderBrush" Color="{StaticResource StrokeStrongColor}" />
+    <SolidColorBrush x:Key="ContentDialogForeground" Color="{StaticResource TextSecondaryColor}" />
+
+    <!-- ComboBox dropdown: match the carbon surfaces instead of the default
+         light-gray popup chrome. -->
+    <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="{StaticResource SurfaceInsetColor}" />
+    <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="{StaticResource StrokeStrongColor}" />
+    <SolidColorBrush x:Key="ComboBoxDropDownForeground" Color="{StaticResource TextSecondaryColor}" />
+    <SolidColorBrush x:Key="ComboBoxItemForeground" Color="{StaticResource TextSecondaryColor}" />
+    <SolidColorBrush x:Key="ComboBoxItemForegroundSelected" Color="{StaticResource TextPrimaryColor}" />
+    <SolidColorBrush x:Key="ComboBoxItemForegroundPointerOver" Color="{StaticResource TextPrimaryColor}" />
+    <SolidColorBrush x:Key="ComboBoxItemBackgroundPointerOver" Color="{StaticResource StrokeDefaultColor}" />
+    <SolidColorBrush x:Key="ComboBoxItemBackgroundSelected" Color="{StaticResource SurfaceControlColor}" />
+    <SolidColorBrush x:Key="ComboBoxItemBackgroundSelectedPointerOver" Color="#2A2A31" />
+
+    <!-- ======================= Shared styles ======================= -->
+
+    <!-- Card container -->
+    <Style x:Key="CardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource StrokeDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="18" />
+    </Style>
+
+    <!-- Inset chip (badges, code labels) -->
+    <Style x:Key="InsetChipStyle" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource SurfaceInsetBrush}" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="6,2" />
+    </Style>
+
+    <!-- Page title ("Mixer", "Audio Output", …) -->
+    <Style x:Key="PageTitleStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontFamily" Value="Segoe UI Variable Display" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+    </Style>
+
+    <!-- Section title inside a page -->
+    <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontFamily" Value="Segoe UI Variable Display" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+    </Style>
+
+    <!-- Caption line under a page/section title -->
+    <Style x:Key="SectionCaptionStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource TextTertiaryBrush}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <!-- Field label inside a card -->
+    <Style x:Key="FieldLabelStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource TextTertiaryBrush}" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+
+    <!-- Inline helper text under a field -->
+    <Style x:Key="FieldHelpStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource TextDisabledBrush}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <!-- Divider inside a card -->
+    <Style x:Key="CardDividerStyle" TargetType="Border">
+        <Setter Property="Height" Value="1" />
+        <Setter Property="Background" Value="{StaticResource StrokeDefaultBrush}" />
+    </Style>
+
+    <!-- Monospace badge text (knob labels, status chips) -->
+    <Style x:Key="MonoBadgeTextStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontFamily" Value="Cascadia Code, Consolas" />
+        <Setter Property="Foreground" Value="{StaticResource TextDisabledBrush}" />
+    </Style>
+
+</ResourceDictionary>
