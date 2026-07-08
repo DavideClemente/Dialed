@@ -188,21 +188,60 @@ public class AudioManager
             return bgra;
         }
 
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern int PrivateExtractIcons(
+            string szFileName, int nIconIndex, int cxIcon, int cyIcon,
+            IntPtr[] phicon, int[]? piconid, int nIcons, int flags);
+
+        [DllImport("user32.dll")]
+        private static extern bool DestroyIcon(IntPtr hIcon);
+
+        // Requests the file's icon at exactly `size` px. Unlike ExtractAssociatedIcon
+        // (which only ever hands back the small 32x32 shell icon), PrivateExtractIcons
+        // picks the best-matching image from the icon group — modern apps ship a
+        // 256x256 entry — and scales it to `size`. Returns null if none is extractable.
+        private static System.Drawing.Bitmap? ExtractIconBitmap(string path, int size)
+        {
+            var handles = new IntPtr[1];
+            int count = PrivateExtractIcons(path, 0, size, size, handles, null, 1, 0);
+            if (count <= 0 || handles[0] == IntPtr.Zero) return null;
+            try
+            {
+                // FromHandle does not own the handle; ToBitmap copies the pixels out,
+                // so the icon (and handle) can be released immediately afterwards.
+                using var icon = System.Drawing.Icon.FromHandle(handles[0]);
+                return icon.ToBitmap();
+            }
+            finally { DestroyIcon(handles[0]); }
+        }
+
         // Renders the file's associated icon to a 64x64 straight-alpha BGRA buffer
         // (Format32bppArgb memory order: B,G,R,A). Stride is exactly width*4 (no padding).
         private static byte[]? ExtractBgraFromPath(string path)
         {
-            using var icon = Icon.ExtractAssociatedIcon(path);
-            if (icon is null) return null;
-
             const int size = IconStore.IconSize;
+
+            // Prefer a native size-64 extraction (downscaled from a large source =
+            // crisp); fall back to the associated icon (a 32->64 upscale = softer) only
+            // when the file exposes no icon group PrivateExtractIcons can read.
+            System.Drawing.Bitmap? srcBmp = ExtractIconBitmap(path, size);
+            if (srcBmp is null)
+            {
+                using var icon = Icon.ExtractAssociatedIcon(path);
+                srcBmp = icon?.ToBitmap();
+            }
+            if (srcBmp is null) return null;
+
             using var bmp = new System.Drawing.Bitmap(size, size, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             using (var g = System.Drawing.Graphics.FromImage(bmp))
             {
-                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                using var srcBmp = icon.ToBitmap();
+                g.InterpolationMode    = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                g.PixelOffsetMode      = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+                g.SmoothingMode        = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                g.CompositingQuality   = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
                 g.DrawImage(srcBmp, 0, 0, size, size);
             }
+            srcBmp.Dispose();
 
             var data = bmp.LockBits(
                 new System.Drawing.Rectangle(0, 0, size, size),
