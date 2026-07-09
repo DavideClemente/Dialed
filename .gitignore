@@ -15,3 +15,7 @@ obj/
 
 # Inno Setup installer output
 installer/Output/
+
+# Local MSIX packaging / bundle artifacts (not for the public repo)
+AppPackages/
+BundleArtifacts/

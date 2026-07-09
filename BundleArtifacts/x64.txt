@@ -1,5 +1,0 @@
-MainPackage=C:\Users\Davide\Documents\Stuff\Projetos\Dialed\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Dialed_1.0.0.1_x64_Debug.msix
-ResourcePack=C:\Users\Davide\Documents\Stuff\Projetos\Dialed\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Dialed_1.0.0.1_scale-100.msix
-ResourcePack=C:\Users\Davide\Documents\Stuff\Projetos\Dialed\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Dialed_1.0.0.1_scale-125.msix
-ResourcePack=C:\Users\Davide\Documents\Stuff\Projetos\Dialed\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Dialed_1.0.0.1_scale-150.msix
-ResourcePack=C:\Users\Davide\Documents\Stuff\Projetos\Dialed\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Dialed_1.0.0.1_scale-400.msix
