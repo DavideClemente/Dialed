@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using AudioMixerWin.Core.Models;
-using AudioMixerWin.Core.Services;
-using AudioMixerWin.Core.ViewModels;
+using Dialed.Core.Models;
+using Dialed.Core.Services;
+using Dialed.Core.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-namespace AudioMixerWin.Core.Controls;
+namespace Dialed.Core.Controls;
 
 public sealed partial class AppPickerDialog : ContentDialog
 {

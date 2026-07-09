@@ -5,10 +5,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using AudioMixerWin.Core.Models;
-using AudioMixerWin.Core.Services;
+using Dialed.Core.Models;
+using Dialed.Core.Services;
 
-namespace AudioMixerWin.Core;
+namespace Dialed.Core;
 
 // Surfaced to the UI so an upload failure shows the actual cause, not a generic
 // "failed" — the message is meant to be read by the user.

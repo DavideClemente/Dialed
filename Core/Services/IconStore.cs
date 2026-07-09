@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 
-namespace AudioMixerWin.Core.Services;
+namespace Dialed.Core.Services;
 
 /// <summary>
 /// Persists extracted app icons to disk so they survive app restarts even when
@@ -16,7 +16,7 @@ public static class IconStore
 
     private static readonly string Directory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "AudioMixerWin", "icons");
+        "Dialed", "icons");
 
     public static void Save(string processName, byte[] bgra)
     {

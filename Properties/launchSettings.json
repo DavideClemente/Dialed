@@ -1,9 +1,9 @@
 {
   "profiles": {
-    "AudioMixerWin (Package)": {
+    "Dialed (Package)": {
       "commandName": "MsixPackage"
     },
-    "AudioMixerWin (Unpackaged)": {
+    "Dialed (Unpackaged)": {
       "commandName": "Project",
       "commandLineArgs": "-r win-x64"
     }

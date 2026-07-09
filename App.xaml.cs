@@ -1,10 +1,10 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using AudioMixerWin.Core.Services;
+using Dialed.Core.Services;
 using Microsoft.UI.Xaml;
 
-namespace AudioMixerWin
+namespace Dialed
 {
     public partial class App : Application
     {
@@ -32,7 +32,7 @@ namespace AudioMixerWin
         {
             try
             {
-                var path = Path.Combine(Path.GetTempPath(), "audiomixer_crash.log");
+                var path = Path.Combine(Path.GetTempPath(), "dialed_crash.log");
                 File.AppendAllText(path,
                     $"[{DateTime.Now:O}] {source}\n{ex}\n\n");
             }

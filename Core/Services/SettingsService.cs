@@ -2,13 +2,13 @@ using System;
 using System.IO;
 using System.Text.Json;
 
-namespace AudioMixerWin.Core.Services;
+namespace Dialed.Core.Services;
 
 public static class SettingsService
 {
     private static readonly string FilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "AudioMixerWin", "settings.json");
+        "Dialed", "settings.json");
 
     public static AppSettings Load()
     {

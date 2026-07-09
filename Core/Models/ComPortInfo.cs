@@ -5,7 +5,7 @@ using System.Linq;
 using System.Management;
 using System.Text.RegularExpressions;
 
-namespace AudioMixerWin.Core.Models;
+namespace Dialed.Core.Models;
 
 public partial class ComPortInfo
 {

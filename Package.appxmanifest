@@ -16,7 +16,7 @@
   <mp:PhoneIdentity PhoneProductId="218542d6-adc8-451f-951b-985052244865" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>AudioMixerWin</DisplayName>
+    <DisplayName>Dialed</DisplayName>
     <PublisherDisplayName>Davide</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -35,8 +35,8 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="AudioMixerWin"
-        Description="AudioMixerWin"
+        DisplayName="Dialed"
+        Description="Dialed"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">

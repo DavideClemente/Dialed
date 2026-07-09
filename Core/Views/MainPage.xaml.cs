@@ -1,6 +1,6 @@
 using System;
-using AudioMixerWin.Core.Controls;
-using AudioMixerWin.Core.ViewModels;
+using Dialed.Core.Controls;
+using Dialed.Core.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -9,7 +9,7 @@ using Microsoft.UI.Xaml.Media.Animation;
 using Windows.Foundation;
 using Windows.System;
 
-namespace AudioMixerWin.Core.Views;
+namespace Dialed.Core.Views;
 
 public sealed partial class MainPage : Page
 {

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Windows.Globalization;
 
-namespace AudioMixerWin.Core.Services;
+namespace Dialed.Core.Services;
 
 /// <summary>
 /// A selectable UI language. <see cref="Code"/> is a BCP-47 tag, or empty for

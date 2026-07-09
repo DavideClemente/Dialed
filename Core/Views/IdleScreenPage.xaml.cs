@@ -1,8 +1,8 @@
-using AudioMixerWin.Core.ViewModels;
+using Dialed.Core.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-namespace AudioMixerWin.Core.Views;
+namespace Dialed.Core.Views;
 
 public sealed partial class IdleScreenPage : Page
 {

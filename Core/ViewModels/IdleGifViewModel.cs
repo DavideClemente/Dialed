@@ -1,10 +1,10 @@
 using System;
-using AudioMixerWin.Core.Models;
+using Dialed.Core.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 
-namespace AudioMixerWin.Core.ViewModels;
+namespace Dialed.Core.ViewModels;
 
 public partial class IdleGifViewModel : ObservableObject
 {

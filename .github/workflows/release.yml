@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version for a manual test build (no GitHub Release is published)'
+        required: false
+        default: '0.0.0-test'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Derive version
+        id: version
+        shell: pwsh
+        run: |
+          if ('${{ github.ref_type }}' -eq 'tag') {
+            $v = '${{ github.ref_name }}' -replace '^v', ''
+          } else {
+            $v = '${{ github.event.inputs.version }}'
+          }
+          "version=$v" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Building version $v"
+
+      - name: Publish (x64, self-contained)
+        run: dotnet publish Dialed.csproj -c Release -p:Platform=x64 -p:PublishProfile=win-x64 -p:Version=${{ steps.version.outputs.version }}
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $publish = Resolve-Path 'bin\Release\net8.0-windows10.0.19041.0\win-x64\publish'
+          # Locate ISCC.exe dynamically so the job survives an Inno Setup major
+          # version bump (Chocolatey installs the latest; the install dir name
+          # tracks the major version, e.g. "Inno Setup 6" / "Inno Setup 7").
+          $iscc = Get-ChildItem `
+            "${env:ProgramFiles(x86)}\Inno Setup*\ISCC.exe", `
+            "${env:ProgramFiles}\Inno Setup*\ISCC.exe" `
+            -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $iscc) { throw "ISCC.exe not found - is Inno Setup installed?" }
+          & $iscc.FullName `
+            "/DAppVersion=${{ steps.version.outputs.version }}" `
+            "/DPublishDir=$publish" `
+            installer\Dialed.iss
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dialed-Setup
+          path: installer/Output/*.exe
+
+      - name: Create GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: installer/Output/*.exe
+          generate_release_notes: true

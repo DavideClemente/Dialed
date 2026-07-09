@@ -6,15 +6,15 @@ using System.IO.Ports;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AudioMixerWin.Core.Models;
-using AudioMixerWin.Core.Services;
+using Dialed.Core.Models;
+using Dialed.Core.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Windows.Storage;
 
-namespace AudioMixerWin.Core.ViewModels;
+namespace Dialed.Core.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {

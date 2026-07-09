@@ -1,6 +1,6 @@
 using System;
 
-namespace AudioMixerWin.Core.Models;
+namespace Dialed.Core.Models;
 
 /// <summary>
 /// Serializable metadata for one GIF in the idle-screen library. The binary

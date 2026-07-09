@@ -1,6 +1,6 @@
 using Microsoft.UI.Xaml.Markup;
 
-namespace AudioMixerWin.Core.Services;
+namespace Dialed.Core.Services;
 
 /// <summary>
 /// XAML markup extension for localized strings: <c>{loc:Loc Key=Some_Key}</c>.

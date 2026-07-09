@@ -2,7 +2,7 @@ using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 
-namespace AudioMixerWin.Core.Converters;
+namespace Dialed.Core.Converters;
 
 public class NullToCollapsedConverter : IValueConverter
 {

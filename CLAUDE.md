@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AudioMixerWin is a WinUI 3 desktop app (.NET 8, Windows App SDK) that acts as a hardware-controlled
+Dialed is a WinUI 3 desktop app (.NET 8, Windows App SDK) that acts as a hardware-controlled
 per-application volume mixer for Windows. The flow:
 
 1. A physical controller (an ESP32/Arduino with potentiometers or rotary encoders, a push switch, and a
@@ -24,14 +24,14 @@ idle-screen GIF library uploaded to the controller's flash.
 
 - Target framework: `net8.0-windows10.0.19041.0`. Platforms are `x86`, `x64`, `ARM64` — there is **no
   AnyCPU**, so `-p:Platform` must always be passed.
-- Build: `dotnet build AudioMixerWin.csproj -p:Platform=x64 -c Debug`
+- Build: `dotnet build Dialed.csproj -p:Platform=x64 -c Debug`
 - The app is **self-contained** (`WindowsAppSDKSelfContained` + `SelfContained`), so builds/publishes need
   a `RuntimeIdentifier`. The csproj derives one from `$(Platform)` when none is passed (so VS/Rider F5
   works); without it the app crashes at startup with `REGDB_E_CLASSNOTREG`.
 - `BuiltInComInteropSupport=true` is required — NAudio's `MMDeviceEnumerator` uses built-in COM interop,
   which the trimmer would otherwise switch off. Trimming is disabled (`PublishTrimmed=false`) because the
   Core Audio `[ComImport]` interfaces are not trim-safe.
-- Run profiles (`Properties/launchSettings.json`): `AudioMixerWin (Unpackaged)` and `AudioMixerWin
+- Run profiles (`Properties/launchSettings.json`): `Dialed (Unpackaged)` and `Dialed
   (Package)` (MSIX, `EnableMsixTooling=true`). The app is unpackaged by default (`WindowsPackageType=None`).
 - There is no test project and no `.editorconfig`.
 
@@ -41,8 +41,8 @@ Key NuGet packages: `CommunityToolkit.Mvvm`, `NAudio` (session volume), `AudioSw
 
 ## Architecture
 
-Single MVVM app. `App.xaml.cs` (namespace `AudioMixerWin`) applies the saved language override, then
-`OnLaunched` creates `MainWindow` (root `AudioMixerWin` namespace, at repo root — **not** under `Core/`).
+Single MVVM app. `App.xaml.cs` (namespace `Dialed`) applies the saved language override, then
+`OnLaunched` creates `MainWindow` (root `Dialed` namespace, at repo root — **not** under `Core/`).
 `MainWindow` hosts a `NavigationView` + `Frame` switching between four pages, plus a tray icon, custom
 title bar, resizable nav-pane splitter, and a "minimize to tray vs quit" close dialog.
 
@@ -80,9 +80,9 @@ title bar, resizable nav-pane splitter, and a "minimize to tray vs quit" close d
     with `IdleGifUploadException` carrying user-readable, localized failure reasons.
   - `OutputManager.cs` — uses `AudioSwitcher`'s `CoreAudioController` to list playback devices and set the
     system default (multimedia + communications roles).
-  - `Core/Services/`: `SettingsService` (JSON at `%LOCALAPPDATA%\AudioMixerWin\settings.json`),
+  - `Core/Services/`: `SettingsService` (JSON at `%LOCALAPPDATA%\Dialed\settings.json`),
     `AppSettings` (the persisted model), `IconStore` (per-process `.bgra` icon cache),
-    `IdleGifLibraryService` (copies imported media into `%LOCALAPPDATA%\AudioMixerWin\idle-gifs\`),
+    `IdleGifLibraryService` (copies imported media into `%LOCALAPPDATA%\Dialed\idle-gifs\`),
     `GifFrameEncoder` (decodes a GIF/image to square RGB565 frames for the GC9A01, resampling to a frame
     cap / max fps), and the localization stack `Loc` + `LocExtension` (`{loc:Loc}` markup) + `LocalizationService`.
 

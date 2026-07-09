@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Microsoft.UI.Xaml.Media;
 
-namespace AudioMixerWin.Core.Models;
+namespace Dialed.Core.Models;
 
 public class AudioSession : INotifyPropertyChanged
 {
