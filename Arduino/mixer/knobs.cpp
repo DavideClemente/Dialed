@@ -24,9 +24,26 @@ static float lastSent[NUM_POTS];
 struct EncConfig { const char* id; int clkPin; int dtPin; int swPin; };
 
 static EncConfig encoders[] = {
-  { "knob1", 17, 16, 5 },
+  { "knob1", 17, 16,  5 },
+  { "knob2", 19, 13, 21 },
+  { "knob3", 22, 25, 26 },
+  { "knob4", 32, 33, 15 },
 };
 static const int NUM_ENCODERS = sizeof(encoders) / sizeof(encoders[0]);
+
+// ── Output toggle switch (SPDT) ─────────────────────────────────────────────
+// A latching 3-terminal toggle: COM -> SWITCH_PIN, the two throws wired to 3.3V
+// and GND so the pin is driven HIGH in one position and LOW in the other. This
+// lives on an input-only pin (34/35/36/39) on purpose: those have no internal
+// pull-up, but none is needed here since both positions actively drive the line,
+// which frees every pull-up-capable GPIO for the encoders. Emits "switch:0" /
+// "switch:1" (handled by SerialManager.HandleLine on the PC side).
+static const int SWITCH_PIN = 34;
+
+static int           swPos          = -1;   // last reported position (-1 = unsent)
+static int           swLastRead     = -1;   // last raw sample, for debounce
+static unsigned long swReadChanged  = 0;    // when swLastRead last changed
+static const unsigned long SWITCH_DEBOUNCE_MS = 30;
 
 static volatile int     encDelta[NUM_ENCODERS] = {};
 static volatile uint8_t encState[NUM_ENCODERS] = {};
@@ -80,9 +97,29 @@ void knobsSetup(KnobCallback cb) {
 #else
   for (int i = 0; i < NUM_POTS; i++) lastSent[i] = -1.0f;
 #endif
+
+  // Output toggle switch. Input-only pin, no pull needed (driven both ways).
+  pinMode(SWITCH_PIN, INPUT);
+}
+
+// Debounced read of the output toggle. Reported independently of the knob mode,
+// so it must run before the pot branch's early-return in knobsLoop().
+static void switchLoop() {
+  int raw = digitalRead(SWITCH_PIN) == HIGH ? 1 : 0;
+  unsigned long now = millis();
+  if (raw != swLastRead) {
+    swLastRead    = raw;
+    swReadChanged = now;
+  }
+  if (raw != swPos && (now - swReadChanged) > SWITCH_DEBOUNCE_MS) {
+    swPos = raw;
+    Serial.print("switch:"); Serial.println(swPos);
+  }
 }
 
 void knobsLoop() {
+  switchLoop();
+
 #if USE_ENCODER
   for (int i = 0; i < NUM_ENCODERS; i++) {
     noInterrupts();
