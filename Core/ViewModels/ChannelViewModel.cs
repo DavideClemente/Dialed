@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
-using AudioMixerWin.Core.Models;
-using AudioMixerWin.Core.Services;
+using Dialed.Core.Models;
+using Dialed.Core.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml.Media;
 
-namespace AudioMixerWin.Core.ViewModels;
+namespace Dialed.Core.ViewModels;
 
 public partial class ChannelViewModel : ObservableObject
 {

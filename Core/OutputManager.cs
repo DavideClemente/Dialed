@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using AudioMixerWin.Core.Models;
+using Dialed.Core.Models;
 using AudioSwitcher.AudioApi;
 using AudioSwitcher.AudioApi.CoreAudio;
 
-namespace AudioMixerWin.Core;
+namespace Dialed.Core;
 
 // Enumerates the active playback endpoints and changes the Windows default
 // output device. NAudio (used by AudioManager for session volume) can read

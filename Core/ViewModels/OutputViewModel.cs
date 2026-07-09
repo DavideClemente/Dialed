@@ -1,12 +1,12 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
-using AudioMixerWin.Core.Models;
-using AudioMixerWin.Core.Services;
+using Dialed.Core.Models;
+using Dialed.Core.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace AudioMixerWin.Core.ViewModels;
+namespace Dialed.Core.ViewModels;
 
 public enum OutputPosition { None, A, B }
 

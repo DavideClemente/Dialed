@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using AudioMixerWin.Core.Services;
-using AudioMixerWin.Core.ViewModels;
-using AudioMixerWin.Core.Views;
+using Dialed.Core.Services;
+using Dialed.Core.ViewModels;
+using Dialed.Core.Views;
 using CommunityToolkit.Mvvm.Input;
 using H.NotifyIcon;
 using Microsoft.UI;
@@ -18,7 +18,7 @@ using Windows.Storage.Pickers;
 using Windows.UI;
 using WinRT.Interop;
 
-namespace AudioMixerWin
+namespace Dialed
 {
     public sealed partial class MainWindow : Window
     {

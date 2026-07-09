@@ -1,6 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace AudioMixerWin.Core.Models;
+namespace Dialed.Core.Models;
 
 // A Windows playback (render) endpoint the switch can route audio to. Id is the
 // Core Audio device id (a GUID string) — stable across reboots, so it's what we

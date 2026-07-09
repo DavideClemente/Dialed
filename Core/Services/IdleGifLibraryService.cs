@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using AudioMixerWin.Core.Models;
+using Dialed.Core.Models;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
 
-namespace AudioMixerWin.Core.Services;
+namespace Dialed.Core.Services;
 
 /// <summary>
 /// Owns the idle-screen media cache folder (one copied file per library entry —
@@ -18,7 +18,7 @@ public class IdleGifLibraryService
 {
     private static readonly string Directory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "AudioMixerWin", "idle-gifs");
+        "Dialed", "idle-gifs");
 
     /// <summary>
     /// Copies a picked GIF or static image into the cache under a new GUID

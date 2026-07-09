@@ -1,4 +1,4 @@
-namespace AudioMixerWin.Core.Models;
+namespace Dialed.Core.Models;
 
 public class ChannelConfig
 {

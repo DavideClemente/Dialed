@@ -1,7 +1,7 @@
 using System;
 using System.ComponentModel;
-using AudioMixerWin.Core.Models;
-using AudioMixerWin.Core.ViewModels;
+using Dialed.Core.Models;
+using Dialed.Core.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -9,7 +9,7 @@ using Microsoft.UI.Xaml.Media;
 using Windows.UI;
 
 
-namespace AudioMixerWin.Core.Controls;
+namespace Dialed.Core.Controls;
 
 public sealed partial class KnobCard : UserControl
 {

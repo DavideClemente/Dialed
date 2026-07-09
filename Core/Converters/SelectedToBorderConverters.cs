@@ -5,7 +5,7 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media;
 using Windows.UI;
 
-namespace AudioMixerWin.Core.Converters;
+namespace Dialed.Core.Converters;
 
 public class SelectedToBorderBrushConverter : IValueConverter
 {

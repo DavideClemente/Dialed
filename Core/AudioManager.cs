@@ -5,13 +5,13 @@ using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
-using AudioMixerWin.Core.Models;
-using AudioMixerWin.Core.Services;
+using Dialed.Core.Models;
+using Dialed.Core.Services;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using NAudio.CoreAudioApi;
 
-namespace AudioMixerWin.Core;
+namespace Dialed.Core;
 
 public class AudioManager
     {

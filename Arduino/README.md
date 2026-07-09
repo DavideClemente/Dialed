@@ -1,6 +1,6 @@
 # AudioMixer — controller firmware
 
-Firmware for the physical knob controller that drives the AudioMixerWin desktop app. The board
+Firmware for the physical knob controller that drives the Dialed desktop app. The board
 reads pots/encoders and reports them to the PC over USB serial; the PC sets per-app Windows
 volumes and (on display-capable boards) echoes back state to render on screen.
 

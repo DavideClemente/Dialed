@@ -1,0 +1,107 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>Dialed</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Fallback language when the chosen/OS language has no Strings/<lang>/Resources.resw. -->
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <Platforms>x86;x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+    <PublishProfile>win-$(Platform).pubxml</PublishProfile>
+    <UseWinUI>true</UseWinUI>
+    <WinUISDKReferences>false</WinUISDKReferences>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <!--
+      Self-contained needs a RuntimeIdentifier. Visual Studio's F5 ("Project" /
+      unpackaged launch) does not pass one, so derive it from the active Platform.
+      Without this, VS builds a framework-dependent exe missing the bundled
+      Windows App SDK runtime, and the app crashes at startup (REGDB_E_CLASSNOTREG).
+    -->
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'x64'">win-x64</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'x86'">win-x86</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'ARM64'">win-arm64</RuntimeIdentifier>
+    <Nullable>enable</Nullable>
+    <ApplicationIcon>Assets\AudioMixer.ico</ApplicationIcon>
+    <!--
+      NAudio's MMDeviceEnumerator activates a Core Audio class through built-in COM
+      interop. The IL trimmer (PublishTrimmed, Release) turns the
+      BuiltInComInteropSupport feature switch off by default, which makes the
+      MMDeviceEnumerator ctor throw NotSupportedException ("Built-in COM has been
+      disabled via a feature switch") and fail-fast at startup. Force it back on so
+      trimmed/Release builds can construct AudioManager. See https://aka.ms/dotnet-illink/com
+    -->
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      CopyToOutputDirectory is required so the assets land next to the exe in BOTH
+      build and publish output. MainWindow loads Assets\AudioMixer.ico at runtime
+      (window + tray icon) relative to the entry assembly; without this the
+      published app throws DirectoryNotFoundException at startup.
+    -->
+    <Content Include="Assets\AudioMixer.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\*.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Strings/<lang>/Resources.resw are auto-included as PRIResource by the SDK and
+       compiled into resources.pri. -->
+
+
+  <ItemGroup>
+    <Manifest Include="$(ApplicationManifest)" />
+  </ItemGroup>
+  
+
+  <!--
+    Defining the "Msix" ProjectCapability here allows the Single-project MSIX Packaging
+    Tools extension to be activated for this project even if the Windows App SDK Nuget
+    package has not yet been restored.
+  -->
+  <ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
+    <ProjectCapability Include="Msix" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="AudioSwitcher.AudioApi" Version="4.0.0-alpha5" />
+    <PackageReference Include="AudioSwitcher.AudioApi.CoreAudio" Version="4.0.0-alpha5" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="H.NotifyIcon.WinUI" Version="2.1.3" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1839" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.2.0" />
+    <PackageReference Include="NAudio" Version="2.3.0" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.7" />
+    <PackageReference Include="System.IO.Ports" Version="10.0.9" />
+    <PackageReference Include="System.Management" Version="8.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Core\Services\" />
+  </ItemGroup>
+
+  <!--
+    Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution
+    Explorer "Package and Publish" context menu entry to be enabled for this project even if
+    the Windows App SDK Nuget package has not yet been restored.
+  -->
+  <PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
+    <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
+  </PropertyGroup>
+
+  <!-- Publish Properties -->
+  <PropertyGroup>
+    <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
+    <!--
+      Trimming is disabled: this app is not trim-safe. The IL trimmer strips members
+      from NAudio's [ComImport] Core Audio interfaces (breaking QueryInterface with
+      E_NOINTERFACE on IMMDevice) and emits IL2026 warnings for the System.Text.Json
+      settings (de)serialization. The size win on a self-contained WinUI 3 app is
+      marginal relative to the bundled runtime, so correctness wins here.
+    -->
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+</Project>

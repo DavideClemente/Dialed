@@ -1,7 +1,7 @@
 using System;
 using Microsoft.Win32;
 
-namespace AudioMixerWin.Core.Services;
+namespace Dialed.Core.Services;
 
 /// <summary>
 /// Toggles "start with Windows" for this unpackaged app via the per-user Run key
@@ -13,7 +13,7 @@ namespace AudioMixerWin.Core.Services;
 public static class StartupService
 {
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string ValueName = "AudioMixerWin";
+    private const string ValueName = "Dialed";
 
     /// <summary>Command-line flag honoured by <c>App.OnLaunched</c> to start hidden in the tray.</summary>
     public const string MinimizedArg = "--minimized";

@@ -1,6 +1,6 @@
 using Microsoft.Windows.ApplicationModel.Resources;
 
-namespace AudioMixerWin.Core.Services;
+namespace Dialed.Core.Services;
 
 /// <summary>
 /// Central string lookup against Strings/&lt;lang&gt;/Resources.resw. Uses an

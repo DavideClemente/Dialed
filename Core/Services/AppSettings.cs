@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using AudioMixerWin.Core.Models;
+using Dialed.Core.Models;
 
-namespace AudioMixerWin.Core.Services;
+namespace Dialed.Core.Services;
 
 public class AppSettings
 {
