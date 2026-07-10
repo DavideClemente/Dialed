@@ -22,7 +22,14 @@ public static class SettingsService
                     return settings;
             }
         }
-        catch { }
+        catch
+        {
+            // Settings save on every change, so returning defaults means the next
+            // change overwrites the file. Keep the unreadable original so the
+            // user's config stays recoverable.
+            try { File.Copy(FilePath, FilePath + ".corrupt", overwrite: true); }
+            catch { }
+        }
 
         return new AppSettings();
     }
@@ -32,7 +39,11 @@ public static class SettingsService
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-            File.WriteAllText(FilePath, JsonSerializer.Serialize(settings));
+            // Write-then-rename so a crash or power loss mid-write can never
+            // leave settings.json truncated.
+            var tmpPath = FilePath + ".tmp";
+            File.WriteAllText(tmpPath, JsonSerializer.Serialize(settings));
+            File.Move(tmpPath, FilePath, overwrite: true);
         }
         catch { }
     }
