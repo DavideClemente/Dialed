@@ -271,6 +271,51 @@
                 </StackPanel>
             </Border>
 
+            <!-- ==================== About ==================== -->
+            <TextBlock Text="{loc:Loc Key=Settings_About_Title}" Style="{StaticResource SectionTitle}" Margin="0,20,0,0" />
+            <TextBlock Text="{loc:Loc Key=Settings_About_Caption}"
+                       Style="{StaticResource SectionCaption}" />
+
+            <Border Style="{StaticResource Card}" Margin="0,6,0,0">
+                <StackPanel Spacing="14">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{x:Bind VersionText}" Style="{StaticResource FieldLabel}" />
+                        <TextBlock Text="{loc:Loc Key=Settings_About_Blurb}" Style="{StaticResource FieldHelp}" />
+                        <HyperlinkButton
+                            NavigateUri="https://github.com/DavideClemente/AudioMixer"
+                            Content="{loc:Loc Key=Settings_About_SourceCode}"
+                            Padding="0" />
+                    </StackPanel>
+
+                    <Border Style="{StaticResource CardDividerStyle}" />
+
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="{loc:Loc Key=Settings_About_Support}" Style="{StaticResource FieldHelp}" />
+                        <!-- Native recreation of the official Buy Me a Coffee button; the button-api
+                             SVG uses <text> elements, which SvgImageSource (Direct2D) can't render. -->
+                        <Button
+                            Click="OnBuyMeABeerClick"
+                            Background="#FFDD00"
+                            CornerRadius="10"
+                            BorderThickness="0"
+                            Padding="20,10"
+                            HorizontalAlignment="Left">
+                            <Button.Resources>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FFE838" />
+                                <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#E8C900" />
+                            </Button.Resources>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="🍺" FontSize="16" VerticalAlignment="Center" />
+                                <TextBlock
+                                    Text="{loc:Loc Key=Settings_BuyMeACoffee}"
+                                    FontSize="15" FontWeight="Bold" Foreground="#000000"
+                                    VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
         </StackPanel>
     </ScrollViewer>
 </Page>

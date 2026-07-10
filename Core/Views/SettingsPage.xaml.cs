@@ -1,5 +1,7 @@
 using System;
+using System.Reflection;
 using Dialed.Core.Models;
+using Dialed.Core.Services;
 using Dialed.Core.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -15,6 +17,10 @@ public sealed partial class SettingsPage : Page
     public ComPortInfo[] PortInfos { get; } = ComPortInfo.GetPorts();
 
     public int[] BaudRates { get; } = { 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600 };
+
+    public string VersionText { get; } = Loc.Get(
+        "Settings_About_Version",
+        Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.0.0");
 
     public SettingsPage(MainViewModel viewModel)
     {
@@ -65,5 +71,8 @@ public sealed partial class SettingsPage : Page
 
         ViewModel.UnhideProcessCommand.Execute(processName);
     }
+
+    private async void OnBuyMeABeerClick(object sender, RoutedEventArgs e)
+        => await Windows.System.Launcher.LaunchUriAsync(new Uri("https://www.buymeacoffee.com/davideclemente"));
 
 }
