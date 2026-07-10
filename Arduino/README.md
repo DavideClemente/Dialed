@@ -71,6 +71,22 @@ full buffer is ~1 KB; if you run low, switch `display.cpp` to a page-buffer cons
 **Libraries:** TFT_eSPI configured for GC9A01. Copy `mixer/User_Setup.h` into your TFT_eSPI
 library folder (it overrides the library's default; see the header comment for pin mapping).
 
+**Wiring (defaults in the sketch, WROOM DevKit — 4 encoders + output toggle):**
+
+| Function                 | GPIO                     | Notes                                                              |
+|--------------------------|--------------------------|-------------------------------------------------------------------|
+| Display SCLK / MOSI      | 18 / 23                  | SPI to the GC9A01. Set in `User_Setup.h`.                         |
+| Display CS / DC / RST    | 14 / 27 / 4              | `VCC`→3.3V, `GND`→GND, `BL`→3.3V if the screen stays dark.        |
+| Encoder 1 CLK / DT / SW  | 17 / 16 / 5             | `SW` uses `INPUT_PULLUP` (button→GND). GPIO5 is a strapping pin.   |
+| Encoder 2 CLK / DT / SW  | 19 / 13 / 21            | Edit `encoders[]` in `knobs.cpp` to match your build.             |
+| Encoder 3 CLK / DT / SW  | 22 / 25 / 26            |                                                                   |
+| Encoder 4 CLK / DT / SW  | 32 / 33 / 15            | GPIO15 is a strapping pin — don't hold this button while booting. |
+| Output toggle (SPDT) COM | 34                       | Center lug→GPIO34, the two throws→3.3V and GND. Input-only pin: no pull-up needed since the toggle drives the line both ways. Emits `switch:0`/`switch:1`. |
+
+All encoder/display `+` lines share the 3.3V rail and all `GND` lines share the ground rail. Avoid
+GPIO 6–11 (flash), 1/3 (USB serial), and 12 (strapping, must be LOW at boot). Choose pots vs
+encoders with `#define USE_ENCODER` at the top of `knobs.cpp` (0 = pots, 1 = encoder).
+
 **Build:**
 ```
 arduino-cli compile --fqbn esp32:esp32:esp32 Arduino/mixer
