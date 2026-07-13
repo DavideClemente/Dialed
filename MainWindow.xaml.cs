@@ -130,7 +130,7 @@ namespace Dialed
 
             _trayIcon = new TaskbarIcon
             {
-                ToolTipText = "Audio Mixer",
+                ToolTipText = "Dialed",
                 Icon = new System.Drawing.Icon(_iconPath),
                 LeftClickCommand = new RelayCommand(RestoreWindow),
                 DoubleClickCommand = new RelayCommand(RestoreWindow),

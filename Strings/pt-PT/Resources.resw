@@ -136,11 +136,11 @@
   <data name="Idle_Delete_Content" xml:space="preserve"><value>Remover "{0}" da sua biblioteca de ecrã inativo?</value></data>
 
   <!-- Close / tray (code) -->
-  <data name="Close_Title" xml:space="preserve"><value>Fechar o Audio Mixer</value></data>
+  <data name="Close_Title" xml:space="preserve"><value>Fechar o Dialed</value></data>
   <data name="Close_Content" xml:space="preserve"><value>Deseja fechar a aplicação ou minimizá-la para a bandeja do sistema?</value></data>
   <data name="Close_Primary" xml:space="preserve"><value>Fechar</value></data>
   <data name="Close_Secondary" xml:space="preserve"><value>Minimizar para a bandeja</value></data>
-  <data name="Tray_Open" xml:space="preserve"><value>Abrir o Audio Mixer</value></data>
+  <data name="Tray_Open" xml:space="preserve"><value>Abrir o Dialed</value></data>
   <data name="Tray_Quit" xml:space="preserve"><value>Sair</value></data>
 
   <!-- GIF upload errors (code) -->
