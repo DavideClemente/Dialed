@@ -93,6 +93,12 @@ self-contained build, compiles the Inno Setup installer, and attaches
 Contributions are welcome — issues and pull requests both. By contributing you agree
 your changes are licensed under the project's non-commercial license (below).
 
+## Support
+
+If Dialed's been useful to you, consider buying me a coffee:
+
+[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://www.buymeacoffee.com/davideclemente)
+
 ## License
 
 Licensed under the **[PolyForm Noncommercial License 1.0.0](LICENSE)**. In short: you

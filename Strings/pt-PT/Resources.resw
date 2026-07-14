@@ -72,6 +72,15 @@
   <data name="Settings_Diagnostics_Caption" xml:space="preserve"><value>Inspecione o fluxo em bruto do controlador.</value></data>
   <data name="Settings_DebugSerial" xml:space="preserve"><value>Depurar eventos série</value></data>
 
+  <!-- Settings: About -->
+  <data name="Settings_About_Title" xml:space="preserve"><value>Acerca de</value></data>
+  <data name="Settings_About_Caption" xml:space="preserve"><value>O Dialed é gratuito e de código aberto.</value></data>
+  <data name="Settings_About_Blurb" xml:space="preserve"><value>Um misturador de volume por aplicação para Windows, controlado por hardware.</value></data>
+  <data name="Settings_About_Version" xml:space="preserve"><value>Versão {0}</value></data>
+  <data name="Settings_About_SourceCode" xml:space="preserve"><value>Ver código no GitHub</value></data>
+  <data name="Settings_About_Support" xml:space="preserve"><value>Se o Dialed lhe tem sido útil, pode apoiar o seu desenvolvimento:</value></data>
+  <data name="Settings_BuyMeACoffee" xml:space="preserve"><value>Pague-me uma cerveja</value></data>
+
   <!-- Output page -->
   <data name="Output_Title" xml:space="preserve"><value>Saída de Áudio</value></data>
   <data name="Output_Caption" xml:space="preserve"><value>O interruptor físico alterna o áudio do Windows entre estes dois dispositivos.</value></data>

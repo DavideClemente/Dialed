@@ -72,6 +72,15 @@
   <data name="Settings_Diagnostics_Caption" xml:space="preserve"><value>Inspect the raw stream from the controller.</value></data>
   <data name="Settings_DebugSerial" xml:space="preserve"><value>Debug serial events</value></data>
 
+  <!-- Settings: About -->
+  <data name="Settings_About_Title" xml:space="preserve"><value>About</value></data>
+  <data name="Settings_About_Caption" xml:space="preserve"><value>Dialed is free and open source.</value></data>
+  <data name="Settings_About_Blurb" xml:space="preserve"><value>A hardware-controlled, per-application volume mixer for Windows.</value></data>
+  <data name="Settings_About_Version" xml:space="preserve"><value>Version {0}</value></data>
+  <data name="Settings_About_SourceCode" xml:space="preserve"><value>View source on GitHub</value></data>
+  <data name="Settings_About_Support" xml:space="preserve"><value>If Dialed has been useful to you, you can support its development:</value></data>
+  <data name="Settings_BuyMeACoffee" xml:space="preserve"><value>Buy me a beer</value></data>
+
   <!-- Output page -->
   <data name="Output_Title" xml:space="preserve"><value>Audio Output</value></data>
   <data name="Output_Caption" xml:space="preserve"><value>The hardware switch flips Windows audio between these two devices.</value></data>
