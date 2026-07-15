@@ -26,6 +26,9 @@
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'x86'">win-x86</RuntimeIdentifier>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'ARM64'">win-arm64</RuntimeIdentifier>
     <Nullable>enable</Nullable>
+    <!-- Program.cs supplies Main (single-instance redirection) instead of the
+         XAML-generated one. -->
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
     <ApplicationIcon>Assets\AudioMixer.ico</ApplicationIcon>
     <!--
       NAudio's MMDeviceEnumerator activates a Core Audio class through built-in COM

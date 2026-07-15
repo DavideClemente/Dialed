@@ -35,6 +35,13 @@ SolidCompression=yes
 WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
+; Upgrade-while-running: Restart Manager closes a running Dialed (the app
+; answers WM_QUERYENDSESSION/WM_ENDSESSION and exits cleanly, bypassing its
+; minimize-to-tray dialog) and relaunches it after install (the app registers
+; itself via RegisterApplicationRestart with --minimized, so it comes back in
+; the tray). Both are Inno defaults, but this behavior is load-bearing here.
+CloseApplications=yes
+RestartApplications=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

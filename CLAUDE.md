@@ -41,8 +41,11 @@ Key NuGet packages: `CommunityToolkit.Mvvm`, `NAudio` (session volume), `AudioSw
 
 ## Architecture
 
-Single MVVM app. `App.xaml.cs` (namespace `Dialed`) applies the saved language override, then
-`OnLaunched` creates `MainWindow` (root `Dialed` namespace, at repo root — **not** under `Core/`).
+Single MVVM app. `Program.cs` is the entry point (`DISABLE_XAML_GENERATED_MAIN`): it enforces a single
+instance via `AppInstance` — a second launch redirects its activation to the running instance (which
+surfaces its window) and exits. It then starts `App.xaml.cs` (namespace `Dialed`), which applies the
+saved language override, then `OnLaunched` creates `MainWindow` (root `Dialed` namespace, at repo root —
+**not** under `Core/`).
 `MainWindow` hosts a `NavigationView` + `Frame` switching between four pages, plus a tray icon, custom
 title bar, resizable nav-pane splitter, and a "minimize to tray vs quit" close dialog.
 
@@ -112,3 +115,8 @@ title bar, resizable nav-pane splitter, and a "minimize to tray vs quit" close d
 - `AudioManager` targets only the default **render** endpoint and silently ignores sessions whose process
   can't be resolved (system sounds, elevated/cross-bitness processes).
 - Session and output-device lists are **polled** on a `DispatcherTimer` (default 2s), not event-driven.
+- **Upgrade-while-running is a contract between app and installer.** `MainWindow` subclasses the window
+  proc to answer `WM_QUERYENDSESSION`/`WM_ENDSESSION` (exiting cleanly, bypassing the minimize-to-tray
+  dialog) and calls `RegisterApplicationRestart` with `--minimized`; `installer/Dialed.iss` relies on
+  both via Restart Manager (`CloseApplications`/`RestartApplications`) to close and relaunch a running
+  Dialed during an upgrade.

@@ -50,6 +50,46 @@ namespace Dialed
 
         private const int SW_RESTORE = 9;
 
+        // ---- End-session handling (installer upgrades, logoff/shutdown) ----
+        // Inno Setup's Restart Manager pass sends WM_QUERYENDSESSION/WM_ENDSESSION
+        // to close the running app before replacing its files. Those must exit the
+        // process directly — the AppWindow.Closing dialog would leave the app
+        // running and force a "files in use" reboot prompt on the user.
+
+        private const uint WM_QUERYENDSESSION = 0x0011;
+        private const uint WM_ENDSESSION = 0x0016;
+        private const int GWLP_WNDPROC = -4;
+
+        private delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
+        private static extern IntPtr SetWindowLongPtr64(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+        [DllImport("user32.dll", EntryPoint = "SetWindowLongW")]
+        private static extern int SetWindowLong32(IntPtr hWnd, int nIndex, int dwNewLong);
+
+        // SetWindowLongPtrW only exists in 64-bit user32; on x86 it's a macro
+        // over SetWindowLongW.
+        private static IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong) =>
+            IntPtr.Size == 8
+                ? SetWindowLongPtr64(hWnd, nIndex, dwNewLong)
+                : new IntPtr(SetWindowLong32(hWnd, nIndex, dwNewLong.ToInt32()));
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr CallWindowProc(IntPtr lpPrevWndFunc, IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        private static extern int RegisterApplicationRestart(string? pwzCommandline, int dwFlags);
+
+        private const int RESTART_NO_CRASH = 1;
+        private const int RESTART_NO_HANG = 2;
+        private const int RESTART_NO_REBOOT = 8;
+
+        // Keeps the subclass delegate alive for the window's lifetime — if it were
+        // collected, the next message would call a freed thunk and crash.
+        private WndProcDelegate? _wndProcHook;
+        private IntPtr _prevWndProc;
+
         public MainViewModel ViewModel { get; } = new();
 
         private readonly MainPage _mainPage;
@@ -76,11 +116,21 @@ namespace Dialed
             _appWindow.Changed += OnAppWindowChanged;
             ConfigureTitleBar();
 
+            _wndProcHook = WndProc;
+            _prevWndProc = SetWindowLongPtr(_hwnd, GWLP_WNDPROC,
+                Marshal.GetFunctionPointerForDelegate(_wndProcHook));
+
+            // After a Restart Manager close (installer upgrade), relaunch hidden in
+            // the tray — matching how the app was most likely running. Crash/hang
+            // restarts are opted out of to avoid restart loops.
+            RegisterApplicationRestart(StartupService.MinimizedArg,
+                RESTART_NO_CRASH | RESTART_NO_HANG | RESTART_NO_REBOOT);
+
             this.Activated += OnFirstActivated;
 
             _trayIcon = new TaskbarIcon
             {
-                ToolTipText = "Audio Mixer",
+                ToolTipText = "Dialed",
                 Icon = new System.Drawing.Icon(_iconPath),
                 LeftClickCommand = new RelayCommand(RestoreWindow),
                 DoubleClickCommand = new RelayCommand(RestoreWindow),
@@ -137,6 +187,25 @@ namespace Dialed
         public SolidColorBrush PillStroke(bool connected) => connected ? PillStrokeConnected : PillStrokeDisconnected;
         public SolidColorBrush PillText(bool connected) => connected ? PillFgConnected : PillFgDisconnected;
         public SolidColorBrush PillDot(bool connected) => connected ? PillDotConnected : PillDotDisconnected;
+
+        private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+        {
+            switch (msg)
+            {
+                case WM_QUERYENDSESSION:
+                    // Nothing blocks shutdown: settings persist on every change,
+                    // so there is no unsaved state to prompt about.
+                    return new IntPtr(1);
+
+                case WM_ENDSESSION:
+                    // wParam == 0 means the shutdown was cancelled elsewhere.
+                    if (wParam != IntPtr.Zero)
+                        ExitApp();
+                    return IntPtr.Zero;
+            }
+
+            return CallWindowProc(_prevWndProc, hWnd, msg, wParam, lParam);
+        }
 
         private async void OnWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
         {
@@ -231,7 +300,11 @@ namespace Dialed
         /// </summary>
         public void HideToTray() => WindowExtensions.Hide(this);
 
-        private void RestoreWindow()
+        /// <summary>
+        /// Shows and foregrounds the window. Public because a redirected launch of
+        /// a second instance surfaces this window via <c>App.ShowMainWindow</c>.
+        /// </summary>
+        public void RestoreWindow()
         {
             WindowExtensions.Show(this);
 

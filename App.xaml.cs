@@ -28,6 +28,16 @@ namespace Dialed
             };
         }
 
+        /// <summary>
+        /// Surfaces the main window. Called (from any thread) when a second
+        /// launch of the app was redirected to this instance — see Program.cs.
+        /// </summary>
+        public void ShowMainWindow()
+        {
+            if (_window is MainWindow window)
+                window.DispatcherQueue.TryEnqueue(() => window.RestoreWindow());
+        }
+
         private static void Log(string source, Exception? ex)
         {
             try

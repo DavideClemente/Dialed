@@ -30,7 +30,7 @@
                    Width="18" Height="18" VerticalAlignment="Center" />
 
             <TextBlock Grid.Column="1"
-                       Text="Audio Mixer"
+                       Text="Dialed"
                        FontSize="13"
                        Foreground="{StaticResource TextSecondaryBrush}"
                        VerticalAlignment="Center" />
