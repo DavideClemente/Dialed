@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Dialed.Core.Services;
 using Dialed.Core.Services.Firmware;
 using Dialed.Core.ViewModels;
+using Microsoft.UI.Xaml.Controls;
 
 namespace Dialed.Core.ViewModels;
 
@@ -42,7 +43,10 @@ public partial class FlashFirmwareViewModel : ObservableObject
     private string resultMessage = "";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ResultSeverity))]
     private bool isError;
+
+    public InfoBarSeverity ResultSeverity => IsError ? InfoBarSeverity.Error : InfoBarSeverity.Success;
 
     public async Task StartFlashAsync()
     {

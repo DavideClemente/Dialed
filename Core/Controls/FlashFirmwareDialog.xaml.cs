@@ -33,5 +33,19 @@ public sealed partial class FlashFirmwareDialog : ContentDialog
                 deferral.Complete();
             }
         };
+
+        // While a flash is running, block dismissal and request cancellation. The CTS
+        // cancel propagates into Esp32Flasher.FlashAsync, which kills the esptool
+        // process tree and surfaces Flash_Err_Cancelled. Once IsFlashing is false the
+        // Close button dismisses the dialog normally.
+        CloseButtonClick += (sender, args) =>
+        {
+            if (ViewModel.IsFlashing)
+            {
+                args.Cancel = true;    // don't dismiss the dialog mid-flash
+                ViewModel.Cancel();    // cancel the CTS -> Esp32Flasher kills the process
+            }
+            // not flashing: allow normal close
+        };
     }
 }

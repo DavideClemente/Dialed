@@ -23,7 +23,7 @@
             IsOpen="{x:Bind ViewModel.HasResult, Mode=OneWay}"
             IsClosable="False"
             Message="{x:Bind ViewModel.ResultMessage, Mode=OneWay}"
-            Severity="Informational" />
+            Severity="{x:Bind ViewModel.ResultSeverity, Mode=OneWay}" />
 
         <TextBlock
             Text="{loc:Loc Key=Flash_BootHint}"
