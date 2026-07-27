@@ -50,6 +50,20 @@
     -->
     <Content Include="Assets\AudioMixer.ico" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\*.png" CopyToOutputDirectory="PreserveNewest" />
+
+    <!--
+      Firmware flashing assets land next to the exe in build AND publish output.
+      FirmwareCatalog/Esp32Flasher resolve them via AppContext.BaseDirectory at
+      runtime; when absent (before the owner runs Arduino/tools/build-firmware.ps1
+      and drops in esptool.exe), FirmwareCatalog.Esp32 returns null and the UI
+      degrades gracefully. Conditional so a clean checkout still builds. The
+      installer picks up whatever is present (recursesubdirs) with no .iss change.
+    -->
+    <Content Include="tools\esptool\esptool.exe" Condition="Exists('tools\esptool\esptool.exe')" CopyToOutputDirectory="PreserveNewest">
+      <Link>tools\esptool\esptool.exe</Link>
+    </Content>
+    <Content Include="firmware\esp32\*.bin" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="firmware\esp32\manifest.json" Condition="Exists('firmware\esp32\manifest.json')" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- Strings/<lang>/Resources.resw are auto-included as PRIResource by the SDK and
