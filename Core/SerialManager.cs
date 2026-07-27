@@ -35,6 +35,10 @@ public class SerialManager
     // moves; the app re-routes the Windows default output device in response.
     public event Action<int>? SwitchChanged;
 
+    // The controller reports its firmware as "fw:<board>:<version>" on boot and in
+    // reply to "ver?". Metadata only — handlers must not touch the device screen.
+    public event Action<string, string>? FirmwareReported;
+
     // Replies to the GIF-upload protocol ("gif:*") are routed here so the upload
     // coroutine can await them without racing the knob-event handlers.
     private readonly Channel<string> _gifResponses =
@@ -95,6 +99,14 @@ public class SerialManager
         catch { }
     }
 
+    /// <summary>Asks the controller to (re)report its firmware version via a "fw:" line.</summary>
+    public void RequestFirmwareVersion()
+    {
+        if (!_port.IsOpen) return;
+        try { _port.WriteLine("ver?"); }
+        catch { }
+    }
+
     public void SendAssignment(int knobIndex, string appName, (byte R, byte G, byte B) color, byte[] iconRgb565)
     {
         if (!_port.IsOpen) return;
@@ -127,6 +139,16 @@ public class SerialManager
         if (cmd.StartsWith("gif:", StringComparison.Ordinal))
         {
             _gifResponses.Writer.TryWrite(cmd);
+            return;
+        }
+
+        // "fw:<board>:<version>" — firmware version report. Three parts, so handle
+        // before the generic 2-part knob split below.
+        if (cmd.StartsWith("fw:", StringComparison.Ordinal))
+        {
+            var fw = cmd.Split(':');
+            if (fw.Length == 3)
+                FirmwareReported?.Invoke(fw[1].Trim(), fw[2].Trim());
             return;
         }
 
