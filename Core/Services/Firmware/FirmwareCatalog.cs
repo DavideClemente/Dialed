@@ -22,4 +22,17 @@ public sealed class FirmwareCatalog
     public FirmwareManifest? Esp32Manifest => FirmwareManifest.TryLoad(Esp32ManifestPath);
 
     public string Esp32BinPath(FirmwareManifest m) => Path.Combine(_baseDir, "firmware", "esp32", m.Bin);
+
+    /// <summary>The ESP32 flasher, or null if the bundled assets are missing/mismatched.</summary>
+    public IBoardFlasher? Esp32
+    {
+        get
+        {
+            var manifest = Esp32Manifest;
+            if (manifest is null) return null;
+            var bin = Esp32BinPath(manifest);
+            if (!File.Exists(EsptoolPath) || !manifest.VerifyBin(bin)) return null;
+            return new Esp32Flasher(manifest, EsptoolPath, bin);
+        }
+    }
 }

@@ -166,4 +166,18 @@
   <data name="Gif_BeforeConfirm" xml:space="preserve"><value>The controller stopped responding before confirming the upload.</value></data>
   <data name="Gif_Verify" xml:space="preserve"><value>The upload did not verify on the controller (size mismatch or storage full).</value></data>
   <data name="Gif_WriteFailed" xml:space="preserve"><value>Serial write failed: {0}</value></data>
+
+  <!-- ESP32 flashing -->
+  <data name="Flash_Board_Esp32" xml:space="preserve"><value>ESP32 (round display)</value></data>
+  <data name="Flash_Progress_Detecting" xml:space="preserve"><value>Connecting to the board…</value></data>
+  <data name="Flash_Progress_Writing" xml:space="preserve"><value>Writing… {0}%</value></data>
+  <data name="Flash_Progress_Rebooting" xml:space="preserve"><value>Flash complete, rebooting…</value></data>
+  <data name="Flash_Err_NoPort" xml:space="preserve"><value>No COM port is selected. Choose your controller's port in Serial settings first.</value></data>
+  <data name="Flash_Err_EsptoolMissing" xml:space="preserve"><value>The flashing tool is missing from this install. Reinstall Dialed and try again.</value></data>
+  <data name="Flash_Err_BinMissing" xml:space="preserve"><value>The bundled firmware image is missing from this install. Reinstall Dialed and try again.</value></data>
+  <data name="Flash_Err_WrongChip" xml:space="preserve"><value>This board isn't a classic ESP32 (WROOM). Other chips (S3/C3/…) aren't supported yet.</value></data>
+  <data name="Flash_Err_NotBootloader" xml:space="preserve"><value>Couldn't reach the ESP32 bootloader. Hold the BOOT button on the board, then click Flash again.</value></data>
+  <data name="Flash_Err_PortBusy" xml:space="preserve"><value>The COM port is in use by another program. Close it (including any serial monitor) and try again.</value></data>
+  <data name="Flash_Err_WriteFailed" xml:space="preserve"><value>Flashing failed: {0}</value></data>
+  <data name="Flash_Err_Cancelled" xml:space="preserve"><value>Flashing was cancelled.</value></data>
 </root>
