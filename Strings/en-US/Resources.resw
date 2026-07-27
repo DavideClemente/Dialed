@@ -26,6 +26,7 @@
   <data name="Common_Show" xml:space="preserve"><value>Show</value></data>
   <data name="Common_Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Common_Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="Common_Close" xml:space="preserve"><value>Close</value></data>
 
   <!-- Settings: General -->
   <data name="Settings_General_Title" xml:space="preserve"><value>General</value></data>
@@ -180,4 +181,12 @@
   <data name="Flash_Err_PortBusy" xml:space="preserve"><value>The COM port is in use by another program. Close it (including any serial monitor) and try again.</value></data>
   <data name="Flash_Err_WriteFailed" xml:space="preserve"><value>Flashing failed: {0}</value></data>
   <data name="Flash_Err_Cancelled" xml:space="preserve"><value>Flashing was cancelled.</value></data>
+
+  <!-- Flash dialog -->
+  <data name="Flash_Dialog_Title" xml:space="preserve"><value>Flash controller firmware</value></data>
+  <data name="Flash_Dialog_FlashNow" xml:space="preserve"><value>Flash</value></data>
+  <data name="Flash_Dialog_BundledVersion" xml:space="preserve"><value>Firmware to install: {0}</value></data>
+  <data name="Flash_Dialog_Port" xml:space="preserve"><value>Port: {0}</value></data>
+  <data name="Flash_Success" xml:space="preserve"><value>Firmware flashed successfully. Reconnecting…</value></data>
+  <data name="Flash_BootHint" xml:space="preserve"><value>If flashing doesn't start, hold the BOOT button on the board while clicking Flash.</value></data>
 </root>

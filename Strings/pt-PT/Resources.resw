@@ -26,6 +26,7 @@
   <data name="Common_Show" xml:space="preserve"><value>Mostrar</value></data>
   <data name="Common_Cancel" xml:space="preserve"><value>Cancelar</value></data>
   <data name="Common_Delete" xml:space="preserve"><value>Eliminar</value></data>
+  <data name="Common_Close" xml:space="preserve"><value>Fechar</value></data>
 
   <!-- Settings: General -->
   <data name="Settings_General_Title" xml:space="preserve"><value>Geral</value></data>
@@ -180,4 +181,12 @@
   <data name="Flash_Err_PortBusy" xml:space="preserve"><value>A porta COM está a ser usada por outro programa. Feche-o (incluindo qualquer monitor série) e tente novamente.</value></data>
   <data name="Flash_Err_WriteFailed" xml:space="preserve"><value>A gravação falhou: {0}</value></data>
   <data name="Flash_Err_Cancelled" xml:space="preserve"><value>A gravação foi cancelada.</value></data>
+
+  <!-- Flash dialog -->
+  <data name="Flash_Dialog_Title" xml:space="preserve"><value>Gravar firmware do controlador</value></data>
+  <data name="Flash_Dialog_FlashNow" xml:space="preserve"><value>Gravar</value></data>
+  <data name="Flash_Dialog_BundledVersion" xml:space="preserve"><value>Firmware a instalar: {0}</value></data>
+  <data name="Flash_Dialog_Port" xml:space="preserve"><value>Porta: {0}</value></data>
+  <data name="Flash_Success" xml:space="preserve"><value>Firmware gravado com sucesso. A reconectar…</value></data>
+  <data name="Flash_BootHint" xml:space="preserve"><value>Se a gravação não iniciar, mantenha o botão BOOT premido enquanto clica em Gravar.</value></data>
 </root>
