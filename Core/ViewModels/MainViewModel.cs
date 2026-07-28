@@ -467,6 +467,9 @@ public partial class MainViewModel : ObservableObject
         // push the configured value whenever we (re)sync after a connect.
         _serial.SendIdleTimeout(IdleTimeoutSeconds * 1000);
         _serial.SendShowPercent(ShowPercentSign);
+        // The controller samples all its physical knobs by default; tell it how many
+        // are actually wired so unconnected pins can't emit phantom knob events.
+        _serial.SendKnobCount(KnobCount);
 
         foreach (var ch in Channels)
             SyncChannel(ch);
@@ -584,6 +587,7 @@ public partial class MainViewModel : ObservableObject
     {
         _settings.KnobCount = value;
         SettingsService.Save(_settings);
+        _serial?.SendKnobCount(value);
     }
 
     partial void OnDebugSerialEventsChanged(bool value)

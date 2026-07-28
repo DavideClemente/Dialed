@@ -99,6 +99,16 @@ public class SerialManager
         catch { }
     }
 
+    // Tell the controller how many knobs are actually wired so it stops sampling the
+    // pins mapped to higher (unconnected) knobs — otherwise those floating inputs emit
+    // phantom up/down/press events. Parsed by handleConfigLine on the device.
+    public void SendKnobCount(int count)
+    {
+        if (!_port.IsOpen) return;
+        try { _port.WriteLine($"cfg:knobs:{Math.Max(0, count)}"); }
+        catch { }
+    }
+
     /// <summary>Asks the controller to (re)report its firmware version via a "fw:" line.</summary>
     public void RequestFirmwareVersion()
     {

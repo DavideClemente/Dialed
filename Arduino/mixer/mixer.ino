@@ -49,6 +49,8 @@ static void handleConfigLine(const char* line) {
     if (ms >= 0) idleTimeoutMs = (unsigned long)ms;
   } else if (strncmp(line, "config:pct:", 11) == 0) {
     displaySetShowPercent(atoi(line + 11) != 0);
+  } else if (strncmp(line, "cfg:knobs:", 10) == 0) {
+    knobsSetActiveCount(atoi(line + 10));
   }
 }
 
