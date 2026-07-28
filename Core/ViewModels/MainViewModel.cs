@@ -335,7 +335,7 @@ public partial class MainViewModel : ObservableObject
         try
         {
             // 3. Flash (esptool owns the port here).
-            await flasher.FlashAsync(port, progress, ct).ConfigureAwait(false);
+            await flasher.FlashAsync(port, progress, ct);
         }
         finally
         {
