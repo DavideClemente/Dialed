@@ -7,11 +7,13 @@ flash a connected ESP32.
 
 The `.exe` is not checked into source control. To set it up:
 
-1. Download `esptool-vX.Y-windows-amd64.zip` from
-   https://github.com/espressif/esptool/releases (pick the latest release).
+1. Download `esptool-vX.Y.Z-windows-amd64.zip` from
+   https://github.com/espressif/esptool/releases (pick the latest release; the
+   build script and app use esptool **v5** hyphenated command syntax, e.g.
+   `write-flash` / `merge-bin`).
 2. Extract it and copy `esptool.exe` to `tools/esptool/esptool.exe` (this folder).
 3. Record the version you downloaded in `tools/esptool/VERSION.txt`, e.g.
-   `esptool v4.8.1`.
+   `esptool v5.3.1`.
 
 Verify with:
 

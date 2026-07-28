@@ -43,13 +43,14 @@ $bootApp0 = Get-ChildItem -Path $dataDir -Recurse -Filter 'boot_app0.bin' `
             -ErrorAction SilentlyContinue | Select-Object -First 1
 if (-not $bootApp0) { throw "boot_app0.bin not found under $dataDir (install esp32 core)" }
 
-# 2. Merge into one image (classic ESP32 offsets; merge_bin pads from 0x0)
+# 2. Merge into one image (classic ESP32 offsets; merge-bin pads from 0x0).
+#    esptool v5 command/flag syntax (hyphens).
 $binName = "$board-$version.bin"
 $mergedBin = Join-Path $outDir $binName
-& $esptool --chip esp32 merge_bin -o $mergedBin `
-  --flash_mode dio --flash_freq 40m --flash_size 4MB `
+& $esptool --chip esp32 merge-bin -o $mergedBin `
+  --flash-mode dio --flash-freq 40m --flash-size 4MB `
   0x1000 $bootBin 0x8000 $partBin 0xe000 $bootApp0.FullName 0x10000 $appBin
-if ($LASTEXITCODE -ne 0) { throw "esptool merge_bin failed" }
+if ($LASTEXITCODE -ne 0) { throw "esptool merge-bin failed" }
 
 # 3. Write manifest.json (sha256 of the merged bin)
 $sha = (Get-FileHash -Algorithm SHA256 -Path $mergedBin).Hash.ToLowerInvariant()

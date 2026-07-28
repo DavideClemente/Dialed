@@ -68,9 +68,10 @@ public sealed partial class Esp32Flasher : IBoardFlasher
 
         progress.Report(new FlashProgress(0, Loc.Get("Flash_Progress_Detecting")));
 
+        // esptool v5 command/flag syntax (hyphens). --before/--after are omitted:
+        // their defaults are exactly default-reset / hard-reset.
         var args = $"--chip esp32 --port {comPort} --baud {FlashBaud} " +
-                   $"--before default_reset --after hard_reset " +
-                   $"write_flash 0x0 \"{_binPath}\"";
+                   $"write-flash 0x0 \"{_binPath}\"";
 
         var psi = new ProcessStartInfo
         {
