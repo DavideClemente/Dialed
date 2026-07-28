@@ -59,6 +59,14 @@
   <data name="Settings_IdleTimeout_Desc" xml:space="preserve"><value>Tempo sem atividade nos botões antes de o controlador mostrar o ecrã inativo.</value></data>
   <data name="Settings_ShowPercent" xml:space="preserve"><value>Mostrar o sinal % no dispositivo</value></data>
 
+  <!-- Settings: Firmware -->
+  <data name="Settings_Firmware_Title" xml:space="preserve"><value>Firmware</value></data>
+  <data name="Settings_Firmware_Caption" xml:space="preserve"><value>Instale o firmware do controlador diretamente no Dialed — sem ferramentas Arduino.</value></data>
+  <data name="Settings_Firmware_Desc" xml:space="preserve"><value>Grava o firmware incluído num ESP32 clássico (WROOM) ligado, através da porta COM selecionada.</value></data>
+  <data name="Settings_Firmware_FlashButton" xml:space="preserve"><value>Gravar firmware do controlador</value></data>
+  <data name="Settings_Firmware_Installed" xml:space="preserve"><value>Firmware instalado: v{0}</value></data>
+  <data name="Settings_Firmware_Installed_Unknown" xml:space="preserve"><value>Firmware instalado: desconhecido (ligue o controlador)</value></data>
+
   <!-- Settings: Audio Sessions -->
   <data name="Settings_Audio_Title" xml:space="preserve"><value>Sessões de Áudio</value></data>
   <data name="Settings_Audio_Caption" xml:space="preserve"><value>Escolha que aplicações aparecem ao mapear botões.</value></data>

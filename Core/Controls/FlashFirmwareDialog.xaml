@@ -7,7 +7,8 @@
     Title="{loc:Loc Key=Flash_Dialog_Title}"
     PrimaryButtonText="{loc:Loc Key=Flash_Dialog_FlashNow}"
     CloseButtonText="{loc:Loc Key=Common_Close}"
-    DefaultButton="Primary">
+    DefaultButton="Primary"
+    IsPrimaryButtonEnabled="{x:Bind ViewModel.CanFlash, Mode=OneWay}">
 
     <StackPanel Spacing="12" MinWidth="360">
         <TextBlock Text="{x:Bind ViewModel.BoardName, Mode=OneWay}" FontWeight="SemiBold" />

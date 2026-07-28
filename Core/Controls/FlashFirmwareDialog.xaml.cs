@@ -19,11 +19,10 @@ public sealed partial class FlashFirmwareDialog : ContentDialog
             var deferral = args.GetDeferral();
             try
             {
-                // Cancel closes the dialog; while flashing, block the close button.
-                IsPrimaryButtonEnabled = false;
+                // IsPrimaryButtonEnabled is bound to ViewModel.CanFlash (OneWay), which
+                // flips false the instant IsFlashing becomes true and re-enables once
+                // the flash finishes and CanFlash is re-evaluated.
                 await ViewModel.StartFlashAsync();
-                // Re-purpose the primary button state after completion.
-                IsPrimaryButtonEnabled = ViewModel.CanFlash;
             }
             finally
             {

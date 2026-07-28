@@ -59,6 +59,14 @@
   <data name="Settings_IdleTimeout_Desc" xml:space="preserve"><value>How long with no knob activity before the controller shows its idle screen.</value></data>
   <data name="Settings_ShowPercent" xml:space="preserve"><value>Show % sign on device</value></data>
 
+  <!-- Settings: Firmware -->
+  <data name="Settings_Firmware_Title" xml:space="preserve"><value>Firmware</value></data>
+  <data name="Settings_Firmware_Caption" xml:space="preserve"><value>Install the controller firmware directly from Dialed — no Arduino tools needed.</value></data>
+  <data name="Settings_Firmware_Desc" xml:space="preserve"><value>Flashes the bundled firmware to a connected classic ESP32 (WROOM) over the selected COM port.</value></data>
+  <data name="Settings_Firmware_FlashButton" xml:space="preserve"><value>Flash controller firmware</value></data>
+  <data name="Settings_Firmware_Installed" xml:space="preserve"><value>Installed firmware: v{0}</value></data>
+  <data name="Settings_Firmware_Installed_Unknown" xml:space="preserve"><value>Installed firmware: unknown (connect the controller)</value></data>
+
   <!-- Settings: Audio Sessions -->
   <data name="Settings_Audio_Title" xml:space="preserve"><value>Audio Sessions</value></data>
   <data name="Settings_Audio_Caption" xml:space="preserve"><value>Choose which apps appear when mapping knobs.</value></data>

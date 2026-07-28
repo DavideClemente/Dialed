@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using Dialed.Core.Controls;
 using Dialed.Core.Models;
 using Dialed.Core.Services;
 using Dialed.Core.ViewModels;
@@ -74,5 +75,11 @@ public sealed partial class SettingsPage : Page
 
     private async void OnBuyMeABeerClick(object sender, RoutedEventArgs e)
         => await Windows.System.Launcher.LaunchUriAsync(new Uri("https://www.buymeacoffee.com/davideclemente"));
+
+    private async void OnFlashFirmwareClick(object sender, RoutedEventArgs e)
+    {
+        var dialog = new FlashFirmwareDialog(ViewModel) { XamlRoot = this.XamlRoot };
+        await dialog.ShowAsync();
+    }
 
 }

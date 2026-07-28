@@ -50,6 +50,14 @@ public partial class MainViewModel : ObservableObject
     /// <summary>Bundled firmware version available to flash, or null if unavailable.</summary>
     public string? BundledFirmwareVersion => _firmwareCatalog.Esp32?.FirmwareVersion;
 
+    /// <summary>Friendly, localized readout of the installed firmware version for the Settings UI.</summary>
+    public string FirmwareInstalledText => string.IsNullOrEmpty(InstalledFirmwareVersion)
+        ? Loc.Get("Settings_Firmware_Installed_Unknown")
+        : Loc.Get("Settings_Firmware_Installed", InstalledFirmwareVersion);
+
+    partial void OnInstalledFirmwareVersionChanged(string? value)
+        => OnPropertyChanged(nameof(FirmwareInstalledText));
+
     [ObservableProperty]
     private string comPort;
 
