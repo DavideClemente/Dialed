@@ -195,6 +195,6 @@
   <data name="Flash_Dialog_FlashNow" xml:space="preserve"><value>Gravar</value></data>
   <data name="Flash_Dialog_BundledVersion" xml:space="preserve"><value>Firmware a instalar: {0}</value></data>
   <data name="Flash_Dialog_Port" xml:space="preserve"><value>Porta: {0}</value></data>
-  <data name="Flash_Success" xml:space="preserve"><value>Firmware gravado com sucesso. A reconectar…</value></data>
+  <data name="Flash_Success" xml:space="preserve"><value>Firmware gravado com sucesso.</value></data>
   <data name="Flash_BootHint" xml:space="preserve"><value>Se a gravação não iniciar, mantenha o botão BOOT premido enquanto clica em Gravar.</value></data>
 </root>

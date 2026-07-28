@@ -195,6 +195,6 @@
   <data name="Flash_Dialog_FlashNow" xml:space="preserve"><value>Flash</value></data>
   <data name="Flash_Dialog_BundledVersion" xml:space="preserve"><value>Firmware to install: {0}</value></data>
   <data name="Flash_Dialog_Port" xml:space="preserve"><value>Port: {0}</value></data>
-  <data name="Flash_Success" xml:space="preserve"><value>Firmware flashed successfully. Reconnecting…</value></data>
+  <data name="Flash_Success" xml:space="preserve"><value>Firmware flashed successfully.</value></data>
   <data name="Flash_BootHint" xml:space="preserve"><value>If flashing doesn't start, hold the BOOT button on the board while clicking Flash.</value></data>
 </root>

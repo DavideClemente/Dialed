@@ -1,3 +1,5 @@
+using System;
+using System.Threading.Tasks;
 using Dialed.Core.ViewModels;
 using Microsoft.UI.Xaml.Controls;
 
@@ -26,10 +28,19 @@ public sealed partial class FlashFirmwareDialog : ContentDialog
             }
             finally
             {
-                // Keep the dialog open so the user sees the result InfoBar; they
-                // dismiss with Close. Prevent auto-close on this click.
+                // Keep the dialog open on this click so the result InfoBar shows.
                 args.Cancel = true;
                 deferral.Complete();
+            }
+
+            // On success, auto-dismiss after a short pause so the user sees the
+            // confirmation without having to click Close. Errors stay open to read
+            // (and to allow a retry). Runs on the UI thread (no ConfigureAwait), so
+            // Hide() is safe.
+            if (ViewModel.HasResult && !ViewModel.IsError)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(2));
+                Hide();
             }
         };
 
