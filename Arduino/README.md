@@ -91,3 +91,13 @@ encoders with `#define USE_ENCODER` at the top of `knobs.cpp` (0 = pots, 1 = enc
 ```
 arduino-cli compile --fqbn esp32:esp32:esp32 Arduino/mixer
 ```
+
+### Firmware versioning & bundled image
+
+The version lives in `Arduino/mixer/version.h` (`FW_BOARD`/`FW_VERSION`), reported over
+serial as `fw:<board>:<version>`. After bumping it, regenerate the bundled image with
+`pwsh Arduino/tools/build-firmware.ps1` (needs `arduino-cli` and `tools/esptool/esptool.exe`
+locally — see `tools/esptool/README.md`). It writes `firmware/esp32/<board>-<version>.bin`
+and `firmware/esp32/manifest.json`, which `Dialed.csproj` bundles next to the exe when
+present; the app degrades gracefully if they're absent. These outputs and `esptool.exe` are
+generated/added on a developer machine, not by CI. Tag releases `firmware-vX.Y.Z`.

@@ -51,6 +51,25 @@ static int              encResidual[NUM_ENCODERS] = {};
 static uint8_t          swLastState[NUM_ENCODERS];
 static unsigned long    swLastDebounce[NUM_ENCODERS];
 
+// ── Active knob count (runtime, pushed by the PC via "cfg:knobs:<N>") ─────────
+// Defaults to the physical maximum so behavior is unchanged until the PC syncs.
+// knobsLoop only samples/reports the first activeEncoders/activePots knobs, so
+// pins mapped to higher (unwired) knobs never generate messages.
+static int activeEncoders = NUM_ENCODERS;
+static int activePots     = NUM_POTS;
+
+void knobsSetActiveCount(int n) {
+  if (n < 0) n = 0;
+  activeEncoders = n < NUM_ENCODERS ? n : NUM_ENCODERS;
+  activePots     = n < NUM_POTS     ? n : NUM_POTS;
+  // Drop deltas accumulated on now-idle encoder pins so a later re-enable starts
+  // clean instead of flushing a stale burst.
+  noInterrupts();
+  for (int i = 0; i < NUM_ENCODERS; i++) encDelta[i] = 0;
+  interrupts();
+  for (int i = 0; i < NUM_ENCODERS; i++) encResidual[i] = 0;
+}
+
 // Raw quadrature steps per physical detent. Common KY-040-style encoders emit a
 // full 2-step gray-code transition between detents (we interrupt on both CLK and
 // DT, CHANGE edge), so one click = 2 raw steps. Reporting every raw step made one
@@ -121,7 +140,7 @@ void knobsLoop() {
   switchLoop();
 
 #if USE_ENCODER
-  for (int i = 0; i < NUM_ENCODERS; i++) {
+  for (int i = 0; i < activeEncoders; i++) {
     noInterrupts();
     int delta = encDelta[i];
     encDelta[i] = 0;
@@ -150,7 +169,7 @@ void knobsLoop() {
   }
 
   unsigned long now = millis();
-  for (int i = 0; i < NUM_ENCODERS; i++) {
+  for (int i = 0; i < activeEncoders; i++) {
     uint8_t sw = digitalRead(encoders[i].swPin);
     if (sw == LOW && swLastState[i] == HIGH && (now - swLastDebounce[i]) > 50) {
       Serial.print(encoders[i].id); Serial.println(":press");
@@ -164,7 +183,7 @@ void knobsLoop() {
   if (millis() - lastSample < 25) return;
   lastSample = millis();
 
-  for (int i = 0; i < NUM_POTS; i++) {
+  for (int i = 0; i < activePots; i++) {
     float val = analogRead(pots[i].pin) / 4095.0f;
     smoothed[i] = smoothed[i] * 0.85f + val * 0.15f;
 

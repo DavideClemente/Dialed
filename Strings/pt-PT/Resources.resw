@@ -26,6 +26,7 @@
   <data name="Common_Show" xml:space="preserve"><value>Mostrar</value></data>
   <data name="Common_Cancel" xml:space="preserve"><value>Cancelar</value></data>
   <data name="Common_Delete" xml:space="preserve"><value>Eliminar</value></data>
+  <data name="Common_Close" xml:space="preserve"><value>Fechar</value></data>
 
   <!-- Settings: General -->
   <data name="Settings_General_Title" xml:space="preserve"><value>Geral</value></data>
@@ -57,6 +58,14 @@
   <data name="Settings_IdleTimeout" xml:space="preserve"><value>Tempo até ecrã inativo (segundos)</value></data>
   <data name="Settings_IdleTimeout_Desc" xml:space="preserve"><value>Tempo sem atividade nos botões antes de o controlador mostrar o ecrã inativo.</value></data>
   <data name="Settings_ShowPercent" xml:space="preserve"><value>Mostrar o sinal % no dispositivo</value></data>
+
+  <!-- Settings: Firmware -->
+  <data name="Settings_Firmware_Title" xml:space="preserve"><value>Firmware</value></data>
+  <data name="Settings_Firmware_Caption" xml:space="preserve"><value>Instale o firmware do controlador diretamente no Dialed — sem ferramentas Arduino.</value></data>
+  <data name="Settings_Firmware_Desc" xml:space="preserve"><value>Grava o firmware incluído num ESP32 clássico (WROOM) ligado, através da porta COM selecionada.</value></data>
+  <data name="Settings_Firmware_FlashButton" xml:space="preserve"><value>Gravar firmware do controlador</value></data>
+  <data name="Settings_Firmware_Installed" xml:space="preserve"><value>Firmware instalado: v{0}</value></data>
+  <data name="Settings_Firmware_Installed_Unknown" xml:space="preserve"><value>Firmware instalado: desconhecido (ligue o controlador)</value></data>
 
   <!-- Settings: Audio Sessions -->
   <data name="Settings_Audio_Title" xml:space="preserve"><value>Sessões de Áudio</value></data>
@@ -166,4 +175,26 @@
   <data name="Gif_BeforeConfirm" xml:space="preserve"><value>O controlador deixou de responder antes de confirmar o carregamento.</value></data>
   <data name="Gif_Verify" xml:space="preserve"><value>O carregamento não foi verificado no controlador (tamanho incorreto ou armazenamento cheio).</value></data>
   <data name="Gif_WriteFailed" xml:space="preserve"><value>Falha na escrita série: {0}</value></data>
+
+  <!-- ESP32 flashing -->
+  <data name="Flash_Board_Esp32" xml:space="preserve"><value>ESP32 (ecrã redondo)</value></data>
+  <data name="Flash_Progress_Detecting" xml:space="preserve"><value>A ligar à placa…</value></data>
+  <data name="Flash_Progress_Writing" xml:space="preserve"><value>A gravar… {0}%</value></data>
+  <data name="Flash_Progress_Rebooting" xml:space="preserve"><value>Gravação concluída, a reiniciar…</value></data>
+  <data name="Flash_Err_NoPort" xml:space="preserve"><value>Nenhuma porta COM selecionada. Escolha a porta do controlador nas definições de série primeiro.</value></data>
+  <data name="Flash_Err_EsptoolMissing" xml:space="preserve"><value>A ferramenta de gravação não está nesta instalação. Reinstale o Dialed e tente novamente.</value></data>
+  <data name="Flash_Err_BinMissing" xml:space="preserve"><value>A imagem de firmware incluída não está nesta instalação. Reinstale o Dialed e tente novamente.</value></data>
+  <data name="Flash_Err_WrongChip" xml:space="preserve"><value>Esta placa não é um ESP32 clássico (WROOM). Outros chips (S3/C3/…) ainda não são suportados.</value></data>
+  <data name="Flash_Err_NotBootloader" xml:space="preserve"><value>Não foi possível aceder ao bootloader do ESP32. Mantenha o botão BOOT premido e clique em Gravar novamente.</value></data>
+  <data name="Flash_Err_PortBusy" xml:space="preserve"><value>A porta COM está a ser usada por outro programa. Feche-o (incluindo qualquer monitor série) e tente novamente.</value></data>
+  <data name="Flash_Err_WriteFailed" xml:space="preserve"><value>A gravação falhou: {0}</value></data>
+  <data name="Flash_Err_Cancelled" xml:space="preserve"><value>A gravação foi cancelada.</value></data>
+
+  <!-- Flash dialog -->
+  <data name="Flash_Dialog_Title" xml:space="preserve"><value>Gravar firmware do controlador</value></data>
+  <data name="Flash_Dialog_FlashNow" xml:space="preserve"><value>Gravar</value></data>
+  <data name="Flash_Dialog_BundledVersion" xml:space="preserve"><value>Firmware a instalar: {0}</value></data>
+  <data name="Flash_Dialog_Port" xml:space="preserve"><value>Porta: {0}</value></data>
+  <data name="Flash_Success" xml:space="preserve"><value>Firmware gravado com sucesso.</value></data>
+  <data name="Flash_BootHint" xml:space="preserve"><value>Se a gravação não iniciar, mantenha o botão BOOT premido enquanto clica em Gravar.</value></data>
 </root>

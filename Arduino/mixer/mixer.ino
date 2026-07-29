@@ -2,6 +2,7 @@
 #include "display.h"
 #include "assignments.h"
 #include "idlegif.h"
+#include "version.h"
 
 // Runtime-configurable: the PC pushes the user's setting via "cfg:idle:<ms>"
 // (see handleConfigLine). Seeded to the previous hardcoded default for the
@@ -48,7 +49,23 @@ static void handleConfigLine(const char* line) {
     if (ms >= 0) idleTimeoutMs = (unsigned long)ms;
   } else if (strncmp(line, "config:pct:", 11) == 0) {
     displaySetShowPercent(atoi(line + 11) != 0);
+  } else if (strncmp(line, "cfg:knobs:", 10) == 0) {
+    knobsSetActiveCount(atoi(line + 10));
   }
+}
+
+static void sendFirmwareVersion() {
+  // Symmetric with SerialManager: "fw:<board>:<version>". Does NOT touch the
+  // display/idle state — it's metadata, not a knob event.
+  Serial.print("fw:");
+  Serial.print(FW_BOARD);
+  Serial.print(':');
+  Serial.println(FW_VERSION);
+}
+
+static void handleVerLine(const char* line) {
+  if (strcmp(line, "ver?") == 0)
+    sendFirmwareVersion();
 }
 
 void readIncomingSerial() {
@@ -65,6 +82,7 @@ void readIncomingSerial() {
           handleVolumeLine(inLine);
           handleMuteLine(inLine);
           handleConfigLine(inLine);
+          handleVerLine(inLine);
         }
         inPos = 0;
       }
@@ -89,6 +107,7 @@ void onKnobChange(const char* id, float value) {
 void setup() {
   displaySetup();
   knobsSetup(onKnobChange);   // knobsSetup calls Serial.begin(921600)
+  sendFirmwareVersion();      // announce firmware version to the PC on boot
   lastKnobActivity = millis();
 }
 

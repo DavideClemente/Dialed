@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="Dialed.Core.Controls.FlashFirmwareDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:loc="using:Dialed.Core.Services"
+    Title="{loc:Loc Key=Flash_Dialog_Title}"
+    PrimaryButtonText="{loc:Loc Key=Flash_Dialog_FlashNow}"
+    CloseButtonText="{loc:Loc Key=Common_Close}"
+    DefaultButton="Primary"
+    IsPrimaryButtonEnabled="{x:Bind ViewModel.CanFlash, Mode=OneWay}">
+
+    <StackPanel Spacing="12" MinWidth="360">
+        <TextBlock Text="{x:Bind ViewModel.BoardName, Mode=OneWay}" FontWeight="SemiBold" />
+        <TextBlock Text="{x:Bind ViewModel.BundledVersionText, Mode=OneWay}" Opacity="0.8" />
+        <TextBlock Text="{x:Bind ViewModel.PortText, Mode=OneWay}" Opacity="0.8" />
+
+        <StackPanel Spacing="6" Visibility="{x:Bind ViewModel.IsFlashing, Mode=OneWay}">
+            <ProgressBar Value="{x:Bind ViewModel.Percent, Mode=OneWay}" Maximum="100" />
+            <TextBlock Text="{x:Bind ViewModel.StatusText, Mode=OneWay}" Opacity="0.8" />
+        </StackPanel>
+
+        <InfoBar
+            IsOpen="{x:Bind ViewModel.HasResult, Mode=OneWay}"
+            IsClosable="False"
+            Message="{x:Bind ViewModel.ResultMessage, Mode=OneWay}"
+            Severity="{x:Bind ViewModel.ResultSeverity, Mode=OneWay}" />
+
+        <TextBlock
+            Text="{loc:Loc Key=Flash_BootHint}"
+            TextWrapping="Wrap" FontSize="12" Opacity="0.7" />
+    </StackPanel>
+</ContentDialog>

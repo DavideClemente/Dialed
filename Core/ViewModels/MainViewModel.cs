@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Dialed.Core.Models;
 using Dialed.Core.Services;
+using Dialed.Core.Services.Firmware;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Dispatching;
@@ -33,10 +34,29 @@ public partial class MainViewModel : ObservableObject
     // false before we detect the port vanishing).
     private bool _wasConnected;
     private readonly IdleGifLibraryService _idleGifLibrary = new();
+    private readonly FirmwareCatalog _firmwareCatalog = new(FirmwareCatalog.DefaultBaseDir);
 
     public IdleScreenViewModel? IdleScreen { get; private set; }
 
     public OutputViewModel Output { get; }
+
+    /// <summary>Firmware version the connected controller reports, or null if unknown.</summary>
+    [ObservableProperty]
+    private string? installedFirmwareVersion;
+
+    /// <summary>The ESP32 flasher (bundled firmware), or null if assets are missing.</summary>
+    public IBoardFlasher? Esp32Flasher => _firmwareCatalog.Esp32;
+
+    /// <summary>Bundled firmware version available to flash, or null if unavailable.</summary>
+    public string? BundledFirmwareVersion => _firmwareCatalog.Esp32?.FirmwareVersion;
+
+    /// <summary>Friendly, localized readout of the installed firmware version for the Settings UI.</summary>
+    public string FirmwareInstalledText => string.IsNullOrEmpty(InstalledFirmwareVersion)
+        ? Loc.Get("Settings_Firmware_Installed_Unknown")
+        : Loc.Get("Settings_Firmware_Installed", InstalledFirmwareVersion);
+
+    partial void OnInstalledFirmwareVersionChanged(string? value)
+        => OnPropertyChanged(nameof(FirmwareInstalledText));
 
     [ObservableProperty]
     private string comPort;
@@ -166,7 +186,11 @@ public partial class MainViewModel : ObservableObject
     private void ScheduleResync() => _ = Task.Run(async () =>
     {
         await Task.Delay(2000);
-        _dispatcherQueue.TryEnqueue(SyncAllChannels);
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            SyncAllChannels();
+            _serial.RequestFirmwareVersion();
+        });
     });
 
     // Detects unplug (target port vanished from the system) and replug (port is back
@@ -187,6 +211,7 @@ public partial class MainViewModel : ObservableObject
             _wasConnected = false;
             LogSerial($"watchdog: connection lost ({ComPort})");
             SerialStatus = Loc.Get("Serial_DeviceRemoved");
+            InstalledFirmwareVersion = null;
             UpdateChannelsSerialState(false);
         }
 
@@ -204,6 +229,7 @@ public partial class MainViewModel : ObservableObject
                 _serial = new SerialManager(ComPort, BaudRate);
                 _wasConnected = false;
                 SerialStatus = Loc.Get("Serial_DeviceRemoved");
+                InstalledFirmwareVersion = null;
                 UpdateChannelsSerialState(false);
             }
             else
@@ -286,6 +312,41 @@ public partial class MainViewModel : ObservableObject
 
     public void ClearIdleGif() => _serial.ClearIdleGif();
 
+    /// <summary>
+    /// Flashes the ESP32 controller with the bundled firmware. Suspends the
+    /// auto-reconnect watchdog and fully releases the COM port for the duration
+    /// (esptool needs exclusive access), then reconnects. Throws FlashException
+    /// with a localized reason on failure.
+    /// </summary>
+    public async Task FlashControllerAsync(IProgress<FlashProgress> progress, CancellationToken ct)
+    {
+        var flasher = Esp32Flasher
+            ?? throw new FlashException(Loc.Get("Flash_Err_EsptoolMissing"));
+
+        var port = ComPort;
+        var watchdogWasRunning = _connectionTimer.IsEnabled;
+
+        // 1. Suspend the watchdog so it can't re-grab the port mid-flash.
+        _connectionTimer.Stop();
+        // 2. Fully release the port.
+        DetachSerial();
+        InstalledFirmwareVersion = null;
+
+        try
+        {
+            // 3. Flash (esptool owns the port here).
+            await flasher.FlashAsync(port, progress, ct);
+        }
+        finally
+        {
+            // 4. Re-open and re-arm, regardless of success/failure.
+            _serial = CreateAndStartSerial();
+            ScheduleResync();
+            if (watchdogWasRunning)
+                _connectionTimer.Start();
+        }
+    }
+
     private SerialManager CreateAndStartSerial()
     {
         var serial = new SerialManager(ComPort, BaudRate);
@@ -293,6 +354,7 @@ public partial class MainViewModel : ObservableObject
         serial.KnobDelta += OnKnobDelta;
         serial.KnobPressed += OnKnobPressed;
         serial.SwitchChanged += OnSwitchChanged;
+        serial.FirmwareReported += OnFirmwareReported;
 
         try
         {
@@ -335,7 +397,11 @@ public partial class MainViewModel : ObservableObject
         serial.KnobDelta -= OnKnobDelta;
         serial.KnobPressed -= OnKnobPressed;
         serial.SwitchChanged -= OnSwitchChanged;
+        serial.FirmwareReported -= OnFirmwareReported;
     }
+
+    private void OnFirmwareReported(string board, string version)
+        => _dispatcherQueue.TryEnqueue(() => InstalledFirmwareVersion = version);
 
     [RelayCommand]
     private void AddChannel() => AddChannelInternal("Select App");
@@ -401,6 +467,9 @@ public partial class MainViewModel : ObservableObject
         // push the configured value whenever we (re)sync after a connect.
         _serial.SendIdleTimeout(IdleTimeoutSeconds * 1000);
         _serial.SendShowPercent(ShowPercentSign);
+        // The controller samples all its physical knobs by default; tell it how many
+        // are actually wired so unconnected pins can't emit phantom knob events.
+        _serial.SendKnobCount(KnobCount);
 
         foreach (var ch in Channels)
             SyncChannel(ch);
@@ -518,6 +587,7 @@ public partial class MainViewModel : ObservableObject
     {
         _settings.KnobCount = value;
         SettingsService.Save(_settings);
+        _serial?.SendKnobCount(value);
     }
 
     partial void OnDebugSerialEventsChanged(bool value)

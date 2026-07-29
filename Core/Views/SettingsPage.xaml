@@ -178,6 +178,27 @@
                 </StackPanel>
             </Border>
 
+            <!-- ==================== Firmware ==================== -->
+            <TextBlock Text="{loc:Loc Key=Settings_Firmware_Title}" Style="{StaticResource SectionTitle}" Margin="0,20,0,0" />
+            <TextBlock Text="{loc:Loc Key=Settings_Firmware_Caption}"
+                       Style="{StaticResource SectionCaption}" />
+
+            <Border Style="{StaticResource Card}" Margin="0,6,0,0">
+                <StackPanel Spacing="14">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{x:Bind ViewModel.FirmwareInstalledText, Mode=OneWay}"
+                                   Style="{StaticResource FieldLabel}" />
+                        <TextBlock Text="{loc:Loc Key=Settings_Firmware_Desc}"
+                                   Style="{StaticResource FieldHelp}" />
+                    </StackPanel>
+
+                    <Button Content="{loc:Loc Key=Settings_Firmware_FlashButton}"
+                            Click="OnFlashFirmwareClick"
+                            BorderThickness="1" CornerRadius="8"
+                            HorizontalAlignment="Left" />
+                </StackPanel>
+            </Border>
+
             <!-- ==================== Audio Sessions ==================== -->
             <TextBlock Text="{loc:Loc Key=Settings_Audio_Title}" Style="{StaticResource SectionTitle}" Margin="0,20,0,0" />
             <TextBlock Text="{loc:Loc Key=Settings_Audio_Caption}"
