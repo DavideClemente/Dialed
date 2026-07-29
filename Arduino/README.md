@@ -95,9 +95,19 @@ arduino-cli compile --fqbn esp32:esp32:esp32 Arduino/mixer
 ### Firmware versioning & bundled image
 
 The version lives in `Arduino/mixer/version.h` (`FW_BOARD`/`FW_VERSION`), reported over
-serial as `fw:<board>:<version>`. After bumping it, regenerate the bundled image with
-`pwsh Arduino/tools/build-firmware.ps1` (needs `arduino-cli` and `tools/esptool/esptool.exe`
-locally — see `tools/esptool/README.md`). It writes `firmware/esp32/<board>-<version>.bin`
-and `firmware/esp32/manifest.json`, which `Dialed.csproj` bundles next to the exe when
-present; the app degrades gracefully if they're absent. These outputs and `esptool.exe` are
-generated/added on a developer machine, not by CI. Tag releases `firmware-vX.Y.Z`.
+serial as `fw:<board>:<version>`. It is the single source of truth for the firmware
+version. **Bump it (SemVer) in the same commit as any change under `mixer/`.**
+
+It is deliberately independent of the app's `v*` release tag — tagging `v1.4.0`
+may legitimately ship `esp32-mixer-1.0.0.bin` if the firmware did not change.
+Nothing enforces the bump: if you change the sketch without bumping, two
+different binaries ship under one version string and the app's
+`fw:<board>:<version>` check will not notice a connected device is stale.
+
+On every tagged `v*` release, `.github/workflows/release.yml` regenerates the bundled
+image by running `Arduino/tools/build-firmware.ps1` (using the pinned `arduino-cli` and
+the pinned `tools/esptool/esptool.exe` — see `tools/esptool/README.md`), producing
+`firmware/esp32/<board>-<version>.bin` and `firmware/esp32/manifest.json`, then attaches
+both to the Release. `Dialed.csproj` bundles them next to the exe when present; the app
+degrades gracefully if they're absent. You can run the same script locally to produce
+the same outputs for local testing, but they are not committed to the repo.

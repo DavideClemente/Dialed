@@ -1,0 +1,78 @@
+name: Firmware
+
+on:
+  push:
+    paths:
+      - 'Arduino/**'
+      - '.github/workflows/firmware.yml'
+      - '.github/actions/setup-arduino/**'
+  pull_request:
+    paths:
+      - 'Arduino/**'
+      - '.github/workflows/firmware.yml'
+      - '.github/actions/setup-arduino/**'
+  workflow_dispatch:
+
+jobs:
+  # version.h is the sole source of truth for the firmware version: release.yml names
+  # the built image after it and writes it into manifest.json, and the app compares the
+  # device's reported fw:<board>:<version> against that manifest to decide whether to
+  # offer a reflash. A sketch change without a bump ships two different binaries under
+  # one version string, so a device running the old one reports "current" and never
+  # gets the fix. That has already happened twice (dbed86d, 508d015) — hence this gate
+  # rather than the README note alone.
+  version-bump:
+    name: FW_VERSION bumped
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need the base commit to diff against
+
+      - name: Require FW_VERSION bump when the sketch changes
+        shell: pwsh
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          $changed = git diff --name-only $env:BASE_SHA HEAD -- Arduino/mixer
+          if (-not $changed) {
+            Write-Host "No changes under Arduino/mixer/ - nothing to check."
+            exit 0
+          }
+          Write-Host "Changed under Arduino/mixer/:"
+          $changed | ForEach-Object { Write-Host "  $_" }
+
+          $versionDiff = git diff $env:BASE_SHA HEAD -- Arduino/mixer/version.h
+          if ($versionDiff -match '^[+-]\s*#define\s+FW_VERSION') {
+            $m = Select-String -Path Arduino/mixer/version.h -Pattern '#define\s+FW_VERSION\s+"([^"]+)"'
+            Write-Host "FW_VERSION bumped to $($m.Matches[0].Groups[1].Value) - OK."
+            exit 0
+          }
+
+          throw @"
+          Arduino/mixer/ changed but FW_VERSION was not bumped.
+
+          Edit Arduino/mixer/version.h and bump FW_VERSION (SemVer) in this PR. It is
+          deliberately independent of the app's v* tag - bump it because the firmware
+          changed, not because a release is being cut.
+          "@
+
+  compile:
+    name: Compile mixer (ESP32)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Arduino toolchain
+        uses: ./.github/actions/setup-arduino
+
+      # Compile only. The merge into a flashable image needs the Windows esptool
+      # and happens in release.yml.
+      - name: Compile mixer sketch
+        shell: pwsh
+        run: |
+          arduino-cli compile --fqbn esp32:esp32:esp32 Arduino/mixer
+          if ($LASTEXITCODE -ne 0) { throw "arduino-cli compile failed" }
