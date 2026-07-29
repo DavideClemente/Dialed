@@ -132,12 +132,49 @@ public class SerialManager
         catch { }
     }
 
+    // Accumulates inbound bytes across DataReceived events so a line split across two
+    // reads is still dispatched exactly once.
+    private readonly StringBuilder _rxBuffer = new();
+
+    // Upper bound on the partial-line buffer. Inbound lines are short (knob events,
+    // "fw:", "gif:" acks); anything larger means we're accumulating garbage with no
+    // newline, so drop it rather than grow without limit.
+    private const int RxBufferLimit = 64 * 1024;
+
     private void OnData(object sender, SerialDataReceivedEventArgs e)
     {
         try
         {
-            var line = _port.ReadLine().Trim();
-            HandleCommand(line);
+            // DataReceived signals *new* arrivals — it is NOT re-raised just because
+            // unread bytes remain buffered. Reading a single line per event therefore
+            // leaves the rest queued and the app replays a growing backlog of stale
+            // events: spin an encoder then reverse, and it keeps applying the old
+            // direction for several steps before catching up. Drain everything
+            // available and dispatch every complete line.
+            var chunk = _port.ReadExisting();
+            if (chunk.Length == 0) return;
+
+            if (_rxBuffer.Length + chunk.Length > RxBufferLimit)
+                _rxBuffer.Clear();
+            _rxBuffer.Append(chunk);
+
+            int start = 0, scan = 0;
+            while (scan < _rxBuffer.Length)
+            {
+                var c = _rxBuffer[scan];
+                if (c == '\n' || c == '\r')
+                {
+                    if (scan > start)
+                    {
+                        var line = _rxBuffer.ToString(start, scan - start).Trim();
+                        if (line.Length > 0)
+                            HandleCommand(line);
+                    }
+                    start = scan + 1;
+                }
+                scan++;
+            }
+            _rxBuffer.Remove(0, start);   // keep only the trailing partial line
         }
         catch { }
     }
