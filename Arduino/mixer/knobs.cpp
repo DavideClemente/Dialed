@@ -46,8 +46,8 @@ static unsigned long swReadChanged  = 0;    // when swLastRead last changed
 static const unsigned long SWITCH_DEBOUNCE_MS = 30;
 
 // encDelta accumulates *completed detents* (±1 each), not raw edges — the
-// full-step decoder below only bumps it on a full valid transition. encState
-// holds each encoder's position in that state machine.
+// decoder below only bumps it on a valid transition that lands on a detent.
+// encState holds each encoder's position in that state machine.
 static volatile int     encDelta[NUM_ENCODERS] = {};
 static volatile uint8_t encState[NUM_ENCODERS] = {};
 static uint8_t          swLastState[NUM_ENCODERS];
@@ -77,39 +77,41 @@ void knobsSetActiveCount(int n) {
 static unsigned long    rotSuppressUntil[NUM_ENCODERS] = {};
 static const unsigned long ROT_SUPPRESS_MS = 60;
 
-// ── Rotary decode: Ben Buxton full-step state machine ────────────────────────
-// Emits a step only when the encoder completes a full, valid transition and
-// settles back on a detent. Partial/invalid transitions — contact bounce, press
-// wobble, direction-reversal backlash — advance internal state but emit nothing,
-// which removes the phantom steps and reversal-lag the old per-edge decoder
-// produced. It also self-adapts to the encoder's steps-per-detent, so there is
-// no DETENT_DIV to tune.
+// ── Rotary decode: Ben Buxton state machine (half-step) ──────────────────────
+// Emits a step only when the encoder completes a valid transition and settles on
+// a detent. Partial/invalid transitions — contact bounce, press wobble,
+// direction-reversal backlash — advance internal state but emit nothing, which
+// removes the phantom steps the old per-edge (QEM / DETENT_DIV) decoder produced.
+//
+// This is the HALF-STEP table: it emits at both the 00 and 11 rest positions,
+// because the encoders used here rest on a detent twice per quadrature cycle
+// (the full-step table emitted only once per two physical clicks). If you fit an
+// encoder that completes one full cycle per detent, use Buxton's full-step table
+// instead or you will get one step per two clicks.
 #define DIR_CW   0x10
 #define DIR_CCW  0x20
 
-#define R_START     0x0
-#define R_CW_FINAL  0x1
-#define R_CW_BEGIN  0x2
-#define R_CW_NEXT   0x3
-#define R_CCW_BEGIN 0x4
-#define R_CCW_FINAL 0x5
-#define R_CCW_NEXT  0x6
+#define R_START       0x0
+#define R_CCW_BEGIN   0x1
+#define R_CW_BEGIN    0x2
+#define R_START_M     0x3
+#define R_CW_BEGIN_M  0x4
+#define R_CCW_BEGIN_M 0x5
 
-static const uint8_t ttable[7][4] = {
-  /* R_START     */ { R_START,    R_CW_BEGIN,  R_CCW_BEGIN, R_START },
-  /* R_CW_FINAL  */ { R_CW_NEXT,  R_START,     R_CW_FINAL,  R_START | DIR_CW },
-  /* R_CW_BEGIN  */ { R_CW_NEXT,  R_CW_BEGIN,  R_START,     R_START },
-  /* R_CW_NEXT   */ { R_CW_NEXT,  R_CW_BEGIN,  R_CW_FINAL,  R_START },
-  /* R_CCW_BEGIN */ { R_CCW_NEXT, R_START,     R_CCW_BEGIN, R_START },
-  /* R_CCW_FINAL */ { R_CCW_NEXT, R_CCW_FINAL, R_START,     R_START | DIR_CCW },
-  /* R_CCW_NEXT  */ { R_CCW_NEXT, R_CCW_FINAL, R_CCW_BEGIN, R_START },
+static const uint8_t ttable[6][4] = {
+  /* R_START (00)   */ { R_START_M,           R_CW_BEGIN,    R_CCW_BEGIN,  R_START },
+  /* R_CCW_BEGIN    */ { R_START_M | DIR_CCW, R_START,       R_CCW_BEGIN,  R_START },
+  /* R_CW_BEGIN     */ { R_START_M | DIR_CW,  R_CW_BEGIN,    R_START,      R_START },
+  /* R_START_M (11) */ { R_START_M,           R_CCW_BEGIN_M, R_CW_BEGIN_M, R_START },
+  /* R_CW_BEGIN_M   */ { R_START_M,           R_START_M,     R_CW_BEGIN_M, R_START | DIR_CW },
+  /* R_CCW_BEGIN_M  */ { R_START_M,           R_CCW_BEGIN_M, R_START_M,    R_START | DIR_CCW },
 };
 
 static void IRAM_ATTR readEncoders() {
   for (int i = 0; i < NUM_ENCODERS; i++) {
-    // pinstate = (DT << 1) | CLK. If a clockwise turn ends up decreasing volume,
-    // swap dtPin/clkPin here (or swap DIR_CW/DIR_CCW below) to flip direction.
-    uint8_t pinstate = (digitalRead(encoders[i].dtPin) << 1) | digitalRead(encoders[i].clkPin);
+    // pinstate = (CLK << 1) | DT, so a clockwise turn increases volume. Swap the
+    // two reads here to flip direction for a differently-wired encoder.
+    uint8_t pinstate = (digitalRead(encoders[i].clkPin) << 1) | digitalRead(encoders[i].dtPin);
     encState[i] = ttable[encState[i] & 0x0F][pinstate];
     uint8_t dir = encState[i] & 0x30;
     if (dir == DIR_CW)       encDelta[i]++;
