@@ -48,6 +48,7 @@ jobs:
           if (-not $exe) { throw "esptool.exe not found inside $url" }
           Copy-Item $exe.FullName 'tools/esptool/esptool.exe' -Force
           & 'tools/esptool/esptool.exe' version
+          if ($LASTEXITCODE -ne 0) { throw "esptool.exe failed to run" }
 
       # Reuses the maintainer's script unchanged so the flash offsets and the
       # manifest schema have exactly one definition.
@@ -134,6 +135,7 @@ jobs:
         with:
           name: Dialed-Setup
           path: installer/Output/*.exe
+          if-no-files-found: error
 
       - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
@@ -142,6 +144,7 @@ jobs:
           path: |
             firmware/esp32/*.bin
             firmware/esp32/manifest.json
+          if-no-files-found: error
 
       - name: Create GitHub Release
         if: github.ref_type == 'tag'
@@ -152,3 +155,4 @@ jobs:
             firmware/esp32/*.bin
             firmware/esp32/manifest.json
           generate_release_notes: true
+          fail_on_unmatched_files: true

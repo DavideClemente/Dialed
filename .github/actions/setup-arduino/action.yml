@@ -6,6 +6,10 @@ description: >
   and the released binary are built with the same toolchain.
 
 inputs:
+  arduino-cli-version:
+    description: arduino-cli version.
+    required: false
+    default: '1.5.2-rc.1'
   core-version:
     description: ESP32 Arduino core version.
     required: false
@@ -28,10 +32,8 @@ runs:
   steps:
     - name: Install arduino-cli
       uses: arduino/setup-arduino-cli@v2
-
-    - name: TEMP print arduino-cli version
-      shell: pwsh
-      run: arduino-cli version
+      with:
+        version: ${{ inputs.arduino-cli-version }}
 
     - name: Initialise config and resolve directories
       id: dirs
@@ -59,7 +61,7 @@ runs:
         path: |
           ${{ steps.dirs.outputs.data }}
           ${{ steps.dirs.outputs.user }}
-        key: arduino-${{ runner.os }}-core${{ inputs.core-version }}-tft${{ inputs.tft-espi-version }}-${{ hashFiles('Arduino/mixer/User_Setup.h') }}
+        key: arduino-${{ runner.os }}-cli${{ inputs.arduino-cli-version }}-core${{ inputs.core-version }}-tft${{ inputs.tft-espi-version }}-${{ hashFiles('Arduino/mixer/User_Setup.h') }}
 
     - name: Install ESP32 core
       shell: pwsh
