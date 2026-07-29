@@ -60,6 +60,10 @@ static unsigned long    swLastDebounce[NUM_ENCODERS];
 static int activeEncoders = NUM_ENCODERS;
 static int activePots     = NUM_POTS;
 
+// Which encoders currently have their quadrature interrupts attached.
+static bool encAttached[NUM_ENCODERS] = {};
+static void encoderAttach(int i, bool on);
+
 void knobsSetActiveCount(int n) {
   if (n < 0) n = 0;
   activeEncoders = n < NUM_ENCODERS ? n : NUM_ENCODERS;
@@ -69,6 +73,11 @@ void knobsSetActiveCount(int n) {
   noInterrupts();
   for (int i = 0; i < NUM_ENCODERS; i++) encDelta[i] = 0;
   interrupts();
+#if USE_ENCODER
+  // Detach the unwired encoders entirely: a floating pin then can't even raise an
+  // interrupt, let alone disturb a neighbouring encoder's decode.
+  for (int i = 0; i < NUM_ENCODERS; i++) encoderAttach(i, i < activeEncoders);
+#endif
 }
 
 // Press-suppression: while an encoder's switch is held (and for a short tail
@@ -107,16 +116,34 @@ static const uint8_t ttable[6][4] = {
   /* R_CCW_BEGIN_M  */ { R_START_M,           R_CCW_BEGIN_M, R_START_M,    R_START | DIR_CCW },
 };
 
-static void IRAM_ATTR readEncoders() {
-  for (int i = 0; i < NUM_ENCODERS; i++) {
-    // pinstate = (CLK << 1) | DT, so a clockwise turn increases volume. Swap the
-    // two reads here to flip direction for a differently-wired encoder.
-    uint8_t pinstate = (digitalRead(encoders[i].clkPin) << 1) | digitalRead(encoders[i].dtPin);
-    encState[i] = ttable[encState[i] & 0x0F][pinstate];
-    uint8_t dir = encState[i] & 0x30;
-    if (dir == DIR_CW)       encDelta[i]++;
-    else if (dir == DIR_CCW) encDelta[i]--;
+// One ISR per encoder, bound to its index via attachInterruptArg. A shared
+// handler that walked every encoder would re-run the state machine for encoders
+// that did not move — so an edge on any pin (including an unwired, floating one)
+// could inject a duplicate transition into a *moving* encoder's sequence.
+static void IRAM_ATTR readEncoder(void* arg) {
+  int i = (int)(intptr_t)arg;
+  // pinstate = (CLK << 1) | DT, so a clockwise turn increases volume. Swap the
+  // two reads here to flip direction for a differently-wired encoder.
+  uint8_t pinstate = (digitalRead(encoders[i].clkPin) << 1) | digitalRead(encoders[i].dtPin);
+  encState[i] = ttable[encState[i] & 0x0F][pinstate];
+  uint8_t dir = encState[i] & 0x30;
+  if (dir == DIR_CW)       encDelta[i]++;
+  else if (dir == DIR_CCW) encDelta[i]--;
+}
+
+// Attach/detach an encoder's quadrature interrupts. Only wired knobs get them, so
+// unconnected pins can't fire interrupts at all. Idempotent.
+static void encoderAttach(int i, bool on) {
+  if (on == encAttached[i]) return;
+  if (on) {
+    encState[i] = R_START;   // start from a known detent
+    attachInterruptArg(digitalPinToInterrupt(encoders[i].clkPin), readEncoder, (void*)(intptr_t)i, CHANGE);
+    attachInterruptArg(digitalPinToInterrupt(encoders[i].dtPin),  readEncoder, (void*)(intptr_t)i, CHANGE);
+  } else {
+    detachInterrupt(digitalPinToInterrupt(encoders[i].clkPin));
+    detachInterrupt(digitalPinToInterrupt(encoders[i].dtPin));
   }
+  encAttached[i] = on;
 }
 
 // ── Public API ──────────────────────────────────────────────────────────────
@@ -132,9 +159,9 @@ void knobsSetup(KnobCallback cb) {
   for (int i = 0; i < NUM_ENCODERS; i++) {
     pinMode(encoders[i].clkPin, INPUT_PULLUP);
     pinMode(encoders[i].dtPin,  INPUT_PULLUP);
-    encState[i] = R_START;
-    attachInterrupt(digitalPinToInterrupt(encoders[i].clkPin), readEncoders, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(encoders[i].dtPin),  readEncoders, CHANGE);
+    // Attach only the knobs currently considered wired. Until the PC pushes
+    // "cfg:knobs:<N>" that is still every encoder, so boot behavior is unchanged.
+    encoderAttach(i, i < activeEncoders);
     pinMode(encoders[i].swPin, INPUT_PULLUP);
     swLastState[i]    = HIGH;
     swLastDebounce[i] = 0;
