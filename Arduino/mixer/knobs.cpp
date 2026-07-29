@@ -45,9 +45,11 @@ static int           swLastRead     = -1;   // last raw sample, for debounce
 static unsigned long swReadChanged  = 0;    // when swLastRead last changed
 static const unsigned long SWITCH_DEBOUNCE_MS = 30;
 
+// encDelta accumulates *completed detents* (±1 each), not raw edges — the
+// decoder below only bumps it on a valid transition that lands on a detent.
+// encState holds each encoder's position in that state machine.
 static volatile int     encDelta[NUM_ENCODERS] = {};
 static volatile uint8_t encState[NUM_ENCODERS] = {};
-static int              encResidual[NUM_ENCODERS] = {};
 static uint8_t          swLastState[NUM_ENCODERS];
 static unsigned long    swLastDebounce[NUM_ENCODERS];
 
@@ -67,29 +69,53 @@ void knobsSetActiveCount(int n) {
   noInterrupts();
   for (int i = 0; i < NUM_ENCODERS; i++) encDelta[i] = 0;
   interrupts();
-  for (int i = 0; i < NUM_ENCODERS; i++) encResidual[i] = 0;
 }
 
-// Raw quadrature steps per physical detent. Common KY-040-style encoders emit a
-// full 2-step gray-code transition between detents (we interrupt on both CLK and
-// DT, CHANGE edge), so one click = 2 raw steps. Reporting every raw step made one
-// click apply the PC's volume step twice (e.g. 4% → 8%). Set to 1 if your encoder
-// is 1 step/detent, or 4 for a full 4-edge cycle per detent.
-static const int DETENT_DIV = 2;
+// Press-suppression: while an encoder's switch is held (and for a short tail
+// after), its rotation is discarded so a press that mechanically nudges the
+// shaft can't emit a phantom volume step.
+static unsigned long    rotSuppressUntil[NUM_ENCODERS] = {};
+static const unsigned long ROT_SUPPRESS_MS = 60;
 
-static const int8_t QEM[16] = {
-   0, -1,  1,  0,
-   1,  0,  0, -1,
-  -1,  0,  0,  1,
-   0,  1, -1,  0
+// ── Rotary decode: Ben Buxton state machine (half-step) ──────────────────────
+// Emits a step only when the encoder completes a valid transition and settles on
+// a detent. Partial/invalid transitions — contact bounce, press wobble,
+// direction-reversal backlash — advance internal state but emit nothing, which
+// removes the phantom steps the old per-edge (QEM / DETENT_DIV) decoder produced.
+//
+// This is the HALF-STEP table: it emits at both the 00 and 11 rest positions,
+// because the encoders used here rest on a detent twice per quadrature cycle
+// (the full-step table emitted only once per two physical clicks). If you fit an
+// encoder that completes one full cycle per detent, use Buxton's full-step table
+// instead or you will get one step per two clicks.
+#define DIR_CW   0x10
+#define DIR_CCW  0x20
+
+#define R_START       0x0
+#define R_CCW_BEGIN   0x1
+#define R_CW_BEGIN    0x2
+#define R_START_M     0x3
+#define R_CW_BEGIN_M  0x4
+#define R_CCW_BEGIN_M 0x5
+
+static const uint8_t ttable[6][4] = {
+  /* R_START (00)   */ { R_START_M,           R_CW_BEGIN,    R_CCW_BEGIN,  R_START },
+  /* R_CCW_BEGIN    */ { R_START_M | DIR_CCW, R_START,       R_CCW_BEGIN,  R_START },
+  /* R_CW_BEGIN     */ { R_START_M | DIR_CW,  R_CW_BEGIN,    R_START,      R_START },
+  /* R_START_M (11) */ { R_START_M,           R_CCW_BEGIN_M, R_CW_BEGIN_M, R_START },
+  /* R_CW_BEGIN_M   */ { R_START_M,           R_START_M,     R_CW_BEGIN_M, R_START | DIR_CW },
+  /* R_CCW_BEGIN_M  */ { R_START_M,           R_CCW_BEGIN_M, R_START_M,    R_START | DIR_CCW },
 };
 
 static void IRAM_ATTR readEncoders() {
   for (int i = 0; i < NUM_ENCODERS; i++) {
-    uint8_t curr = (digitalRead(encoders[i].clkPin) << 1) | digitalRead(encoders[i].dtPin);
-    uint8_t idx  = (encState[i] << 2) | curr;
-    encDelta[i] += QEM[idx & 0x0F];
-    encState[i]  = curr;
+    // pinstate = (CLK << 1) | DT, so a clockwise turn increases volume. Swap the
+    // two reads here to flip direction for a differently-wired encoder.
+    uint8_t pinstate = (digitalRead(encoders[i].clkPin) << 1) | digitalRead(encoders[i].dtPin);
+    encState[i] = ttable[encState[i] & 0x0F][pinstate];
+    uint8_t dir = encState[i] & 0x30;
+    if (dir == DIR_CW)       encDelta[i]++;
+    else if (dir == DIR_CCW) encDelta[i]--;
   }
 }
 
@@ -106,7 +132,7 @@ void knobsSetup(KnobCallback cb) {
   for (int i = 0; i < NUM_ENCODERS; i++) {
     pinMode(encoders[i].clkPin, INPUT_PULLUP);
     pinMode(encoders[i].dtPin,  INPUT_PULLUP);
-    encState[i] = (digitalRead(encoders[i].clkPin) << 1) | digitalRead(encoders[i].dtPin);
+    encState[i] = R_START;
     attachInterrupt(digitalPinToInterrupt(encoders[i].clkPin), readEncoders, CHANGE);
     attachInterrupt(digitalPinToInterrupt(encoders[i].dtPin),  readEncoders, CHANGE);
     pinMode(encoders[i].swPin, INPUT_PULLUP);
@@ -140,35 +166,37 @@ void knobsLoop() {
   switchLoop();
 
 #if USE_ENCODER
+  unsigned long now = millis();
+
   for (int i = 0; i < activeEncoders; i++) {
     noInterrupts();
     int delta = encDelta[i];
     encDelta[i] = 0;
     interrupts();
 
-    // Collapse the raw quadrature steps into whole detents, carrying the leftover
-    // step so a click that straddles two loop iterations still counts once.
-    encResidual[i] += delta;
-    int detents = encResidual[i] / DETENT_DIV;
-    encResidual[i] -= detents * DETENT_DIV;
+    // While the switch is held (and for ROT_SUPPRESS_MS after it releases), drop
+    // this encoder's rotation so a press that jostles the shaft can't move volume.
+    if (digitalRead(encoders[i].swPin) == LOW)
+      rotSuppressUntil[i] = now + ROT_SUPPRESS_MS;
+    if (now < rotSuppressUntil[i])
+      continue;
 
-    // Encoders emit relative deltas, not an absolute level. We only report the
-    // detents to the PC; the on-device gauge is driven by the authoritative
-    // `vol:` echo the PC sends back (see handleVolumeLine in mixer.ino). Do NOT
-    // call s_cb here — that feeds ±1.0 into displayShowKnob, which treats its
-    // argument as an absolute 0..1 level and snaps the gauge to 0%/100%.
-    if (detents > 0) {
-      for (int d = 0; d < detents; d++) {
+    // delta is already whole detents (the full-step decoder emits one per click).
+    // Encoders report relative deltas, not an absolute level; the on-device gauge
+    // is driven by the authoritative `vol:` echo the PC sends back (see
+    // handleVolumeLine in mixer.ino). Do NOT call s_cb here — that feeds ±1.0 into
+    // displayShowKnob, which would snap the gauge to 0%/100%.
+    if (delta > 0) {
+      for (int d = 0; d < delta; d++) {
         Serial.print(encoders[i].id); Serial.println(":up");
       }
-    } else if (detents < 0) {
-      for (int d = 0; d > detents; d--) {
+    } else if (delta < 0) {
+      for (int d = 0; d > delta; d--) {
         Serial.print(encoders[i].id); Serial.println(":down");
       }
     }
   }
 
-  unsigned long now = millis();
   for (int i = 0; i < activeEncoders; i++) {
     uint8_t sw = digitalRead(encoders[i].swPin);
     if (sw == LOW && swLastState[i] == HIGH && (now - swLastDebounce[i]) > 50) {
