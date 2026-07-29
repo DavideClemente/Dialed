@@ -1,0 +1,92 @@
+name: Setup Arduino toolchain
+description: >
+  Installs arduino-cli with the pinned ESP32 core and TFT_eSPI, then overwrites the
+  library's User_Setup.h with Arduino/mixer/User_Setup.h so the GC9A01 pin mapping
+  matches the hardware. Shared by firmware.yml and release.yml so the compile check
+  and the released binary are built with the same toolchain.
+
+inputs:
+  core-version:
+    description: ESP32 Arduino core version.
+    required: false
+    default: '3.3.10'
+  tft-espi-version:
+    description: TFT_eSPI library version.
+    required: false
+    default: '2.5.43'
+
+outputs:
+  data-dir:
+    description: arduino-cli data directory (installed cores live here).
+    value: ${{ steps.dirs.outputs.data }}
+  user-dir:
+    description: arduino-cli sketchbook directory (installed libraries live here).
+    value: ${{ steps.dirs.outputs.user }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install arduino-cli
+      uses: arduino/setup-arduino-cli@v2
+
+    - name: Initialise config and resolve directories
+      id: dirs
+      shell: pwsh
+      run: |
+        arduino-cli config init --overwrite | Out-Null
+        $data = (arduino-cli config get directories.data).Trim()
+        $user = (arduino-cli config get directories.user).Trim()
+        if (-not $data -or -not $user) { throw "Could not resolve arduino-cli directories" }
+        "data=$data" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        "user=$user" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        Write-Host "data=$data"
+        Write-Host "user=$user"
+
+    # Restored before the installs so a hit turns them into no-ops. The key covers
+    # both pinned versions and User_Setup.h, so bumping any of them busts the cache.
+    - name: Cache cores and libraries
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ steps.dirs.outputs.data }}
+          ${{ steps.dirs.outputs.user }}
+        key: arduino-${{ runner.os }}-core${{ inputs.core-version }}-tft${{ inputs.tft-espi-version }}-${{ hashFiles('Arduino/mixer/User_Setup.h') }}
+
+    - name: Install ESP32 core
+      shell: pwsh
+      env:
+        ESP32_INDEX: https://espressif.github.io/arduino-esp32/package_esp32_index.json
+      run: |
+        $corePath = Join-Path '${{ steps.dirs.outputs.data }}' 'packages/esp32/hardware/esp32/${{ inputs.core-version }}'
+        if (Test-Path $corePath) {
+          Write-Host "esp32 core ${{ inputs.core-version }} already present (cache hit)"
+        } else {
+          arduino-cli core update-index --additional-urls $env:ESP32_INDEX
+          if ($LASTEXITCODE -ne 0) { throw "arduino-cli core update-index failed" }
+          arduino-cli core install esp32:esp32@${{ inputs.core-version }} --additional-urls $env:ESP32_INDEX
+          if ($LASTEXITCODE -ne 0) { throw "arduino-cli core install failed" }
+        }
+        if (-not (Test-Path $corePath)) { throw "esp32 core not found at $corePath after install" }
+
+    - name: Install TFT_eSPI
+      shell: pwsh
+      run: |
+        $libDir = Join-Path '${{ steps.dirs.outputs.user }}' 'libraries/TFT_eSPI'
+        if (Test-Path $libDir) {
+          Write-Host "TFT_eSPI already present (cache hit)"
+        } else {
+          arduino-cli lib install "TFT_eSPI@${{ inputs.tft-espi-version }}"
+          if ($LASTEXITCODE -ne 0) { throw "arduino-cli lib install failed" }
+        }
+        if (-not (Test-Path $libDir)) { throw "TFT_eSPI not found at $libDir after install" }
+
+    # The stock library has no GC9A01 pin mapping; without this the sketch does not
+    # compile. Mirrors the manual step documented in Arduino/README.md.
+    - name: Apply the sketch's User_Setup.h to TFT_eSPI
+      shell: pwsh
+      run: |
+        $target = Join-Path '${{ steps.dirs.outputs.user }}' 'libraries/TFT_eSPI/User_Setup.h'
+        $source = Join-Path $env:GITHUB_WORKSPACE 'Arduino/mixer/User_Setup.h'
+        if (-not (Test-Path $source)) { throw "Missing $source" }
+        Copy-Item -Path $source -Destination $target -Force
+        Write-Host "Applied User_Setup.h -> $target"

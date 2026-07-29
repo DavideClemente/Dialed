@@ -1,0 +1,33 @@
+name: Firmware
+
+on:
+  push:
+    paths:
+      - 'Arduino/**'
+      - '.github/workflows/firmware.yml'
+      - '.github/actions/setup-arduino/**'
+  pull_request:
+    paths:
+      - 'Arduino/**'
+      - '.github/workflows/firmware.yml'
+      - '.github/actions/setup-arduino/**'
+  workflow_dispatch:
+
+jobs:
+  compile:
+    name: Compile mixer (ESP32)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Arduino toolchain
+        uses: ./.github/actions/setup-arduino
+
+      # Compile only. The merge into a flashable image needs the Windows esptool
+      # and happens in release.yml.
+      - name: Compile mixer sketch
+        shell: pwsh
+        run: |
+          arduino-cli compile --fqbn esp32:esp32:esp32 Arduino/mixer
+          if ($LASTEXITCODE -ne 0) { throw "arduino-cli compile failed" }
