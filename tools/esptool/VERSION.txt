@@ -1,1 +1,1 @@
-esptool (not yet added — see README.md)
+5.3.1

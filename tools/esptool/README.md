@@ -12,8 +12,18 @@ The `.exe` is not checked into source control. To set it up:
    build script and app use esptool **v5** hyphenated command syntax, e.g.
    `write-flash` / `merge-bin`).
 2. Extract it and copy `esptool.exe` to `tools/esptool/esptool.exe` (this folder).
-3. Record the version you downloaded in `tools/esptool/VERSION.txt`, e.g.
-   `esptool v5.3.1`.
+3. Record the version you downloaded in `tools/esptool/VERSION.txt` as a bare
+   SemVer on a single line, e.g. `5.3.1` — no `v` prefix. The release workflow
+   parses this file to download the matching `esptool.exe`, so the format is
+   load-bearing.
+
+## CI
+
+`.github/workflows/release.yml` downloads
+`esptool-v<VERSION.txt>-windows-amd64.zip` from Espressif's GitHub releases on
+every release build, so the exe does not need to be committed. Bumping the pin
+is a one-line edit to `VERSION.txt` — do it here and locally at the same time so
+CI and your machine stay on the same version.
 
 Verify with:
 

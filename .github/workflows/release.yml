@@ -21,6 +21,54 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Arduino toolchain
+        uses: ./.github/actions/setup-arduino
+
+      # esptool.exe is not committed (14 MB); the pin lives in VERSION.txt so CI
+      # and the maintainer's machine stay on the same version. It is needed twice:
+      # by build-firmware.ps1 to merge the image, and at runtime by Esp32Flasher.
+      - name: Fetch pinned esptool
+        shell: pwsh
+        run: |
+          $version = (Get-Content 'tools/esptool/VERSION.txt' -Raw).Trim()
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "tools/esptool/VERSION.txt must hold a bare SemVer (e.g. 5.3.1); got '$version'"
+          }
+          $url = "https://github.com/espressif/esptool/releases/download/v$version/esptool-v$version-windows-amd64.zip"
+          $zip = Join-Path $env:RUNNER_TEMP 'esptool.zip'
+          Write-Host "Downloading $url"
+          try {
+            Invoke-WebRequest -Uri $url -OutFile $zip
+          } catch {
+            throw "esptool download failed for $url : $_"
+          }
+          $extract = Join-Path $env:RUNNER_TEMP 'esptool-extract'
+          Expand-Archive -Path $zip -DestinationPath $extract -Force
+          $exe = Get-ChildItem -Path $extract -Recurse -Filter 'esptool.exe' | Select-Object -First 1
+          if (-not $exe) { throw "esptool.exe not found inside $url" }
+          Copy-Item $exe.FullName 'tools/esptool/esptool.exe' -Force
+          & 'tools/esptool/esptool.exe' version
+
+      # Reuses the maintainer's script unchanged so the flash offsets and the
+      # manifest schema have exactly one definition.
+      - name: Build ESP32 firmware
+        shell: pwsh
+        run: ./Arduino/tools/build-firmware.ps1
+
+      # A missing asset is NOT a build error: the csproj includes these
+      # conditionally, so publish would succeed and ship an installer with no
+      # flasher in it. Fail here instead.
+      - name: Verify firmware assets
+        shell: pwsh
+        run: |
+          foreach ($f in @('tools/esptool/esptool.exe', 'firmware/esp32/manifest.json')) {
+            if (-not (Test-Path $f)) { throw "Missing expected firmware asset: $f" }
+          }
+          $manifest = Get-Content 'firmware/esp32/manifest.json' -Raw | ConvertFrom-Json
+          $bin = Join-Path 'firmware/esp32' $manifest.bin
+          if (-not (Test-Path $bin)) { throw "manifest.json names '$($manifest.bin)' but it does not exist" }
+          Write-Host "Firmware: $($manifest.board) $($manifest.version) -> $($manifest.bin)"
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -40,6 +88,26 @@ jobs:
 
       - name: Publish (x64, self-contained)
         run: dotnet publish Dialed.csproj -c Release -p:Platform=x64 -p:PublishProfile=win-x64 -p:Version=${{ steps.version.outputs.version }}
+
+      # Mirrors exactly what FirmwareCatalog.Esp32 checks at runtime (paths +
+      # sha256): if this passes, the shipped app will offer one-click flashing.
+      - name: Verify firmware in publish output
+        shell: pwsh
+        run: |
+          $publish = 'bin/Release/net8.0-windows10.0.19041.0/win-x64/publish'
+          $esptool = Join-Path $publish 'tools/esptool/esptool.exe'
+          $manifestPath = Join-Path $publish 'firmware/esp32/manifest.json'
+          foreach ($f in @($esptool, $manifestPath)) {
+            if (-not (Test-Path $f)) { throw "Missing from publish output: $f" }
+          }
+          $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+          $bin = Join-Path $publish "firmware/esp32/$($manifest.bin)"
+          if (-not (Test-Path $bin)) { throw "Missing from publish output: $bin" }
+          $sha = (Get-FileHash -Algorithm SHA256 -Path $bin).Hash.ToLowerInvariant()
+          if ($sha -ne $manifest.sha256) {
+            throw "sha256 mismatch in publish output: manifest $($manifest.sha256), file $sha"
+          }
+          Write-Host "Publish output carries $($manifest.bin) (sha256 verified)"
 
       - name: Install Inno Setup
         run: choco install innosetup -y --no-progress
