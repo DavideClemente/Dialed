@@ -34,11 +34,13 @@ runs:
       shell: pwsh
       run: |
         arduino-cli config init --overwrite | Out-Null
-        # arduino-cli's plain-text output can carry stray non-printable bytes (e.g. ANSI
-        # remnants) that .Trim() alone does not strip, which corrupts the paths built from
-        # these outputs later. Strip to printable ASCII before trimming.
-        $data = ((arduino-cli config get directories.data) -replace '[^\x20-\x7e]', '').Trim()
-        $user = ((arduino-cli config get directories.user) -replace '[^\x20-\x7e]', '').Trim()
+        # `arduino-cli config get` prints the value followed by a blank line, so capturing
+        # it directly via $(...) yields a 2-element array ([value, ""]) rather than a single
+        # string; PowerShell then maps .Trim() over each element instead of collapsing it,
+        # and later string interpolation rejoins the array with a space, appending a stray
+        # trailing space to the value. Out-String flattens the pipeline to one string first.
+        $data = (arduino-cli config get directories.data | Out-String).Trim()
+        $user = (arduino-cli config get directories.user | Out-String).Trim()
         if (-not $data -or -not $user) { throw "Could not resolve arduino-cli directories" }
         "data=$data" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
         "user=$user" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
