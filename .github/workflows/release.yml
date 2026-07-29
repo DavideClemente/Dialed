@@ -135,9 +135,20 @@ jobs:
           name: Dialed-Setup
           path: installer/Output/*.exe
 
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dialed-Firmware
+          path: |
+            firmware/esp32/*.bin
+            firmware/esp32/manifest.json
+
       - name: Create GitHub Release
         if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
-          files: installer/Output/*.exe
+          files: |
+            installer/Output/*.exe
+            firmware/esp32/*.bin
+            firmware/esp32/manifest.json
           generate_release_notes: true

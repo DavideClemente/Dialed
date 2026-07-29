@@ -101,3 +101,14 @@ locally — see `tools/esptool/README.md`). It writes `firmware/esp32/<board>-<v
 and `firmware/esp32/manifest.json`, which `Dialed.csproj` bundles next to the exe when
 present; the app degrades gracefully if they're absent. These outputs and `esptool.exe` are
 generated/added on a developer machine, not by CI. Tag releases `firmware-vX.Y.Z`.
+
+### Versioning
+
+`mixer/version.h` holds `FW_VERSION`, the single source of truth for the firmware
+version. **Bump it (SemVer) in the same commit as any change under `mixer/`.**
+
+It is deliberately independent of the app's `v*` release tag — tagging `v1.4.0`
+may legitimately ship `esp32-mixer-1.0.0.bin` if the firmware did not change.
+Nothing enforces the bump: if you change the sketch without bumping, two
+different binaries ship under one version string and the app's
+`fw:<board>:<version>` check will not notice a connected device is stale.
