@@ -7,9 +7,11 @@ description: >
 
 inputs:
   arduino-cli-version:
-    description: arduino-cli version.
+    description: >
+      arduino-cli version. Pin a stable release, never a prerelease — this tool's
+      output formatting has broken this pipeline before (see the config-get note below).
     required: false
-    default: '1.5.2-rc.1'
+    default: '1.5.1'
   core-version:
     description: ESP32 Arduino core version.
     required: false
