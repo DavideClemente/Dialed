@@ -29,6 +29,10 @@ runs:
     - name: Install arduino-cli
       uses: arduino/setup-arduino-cli@v2
 
+    - name: TEMP print arduino-cli version
+      shell: pwsh
+      run: arduino-cli version
+
     - name: Initialise config and resolve directories
       id: dirs
       shell: pwsh
