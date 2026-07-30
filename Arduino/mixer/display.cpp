@@ -1,6 +1,8 @@
 #include "display.h"
 #include "assignments.h"
 #include "mute_icon.h"
+#include "headphone_icon.h"
+#include "speaker_icon.h"
 #include "idlegif.h"
 #include <TFT_eSPI.h>
 #include <SPI.h>
@@ -38,13 +40,28 @@ static const uint16_t ACCENT_DEFAULT = 0x065F;
 // solid fill — which is why r=4 (reaching 112) left stray white pixels behind.
 static const int TIP_DOT_R = 3;
 
+// ── Output card ───────────────────────────────────────────────────────────────
+// Everything that changes between the two positions lives in one band, so the
+// slide moves the whole card as a single sprite push. Band spans y=58..162:
+// icon at +4 (48 tall), name centered at +66, position letter at +88.
+static const int BAND_X = 0;
+static const int BAND_Y = 58;
+static const int BAND_W = 240;
+static const int BAND_H = 104;
+static const unsigned long OUT_SLIDE_MS = 300;
+
+// Soft red, same value the upload screen uses for "Failed".
+static const uint16_t OUT_RED = 0xF9A6;
+
 // ── Animation timing ──────────────────────────────────────────────────────────
 static const unsigned long ANIM_DT        = 16;   // active animation step (~60 fps)
 static const unsigned long IDLE_DT        = 16;   // idle frame step (~60 fps)
 static const unsigned long IDLE_BREATH_MS = 1800; // breathing ring period (ms)
 
 // ── State ─────────────────────────────────────────────────────────────────────
-enum Mode { ACTIVE, IDLE };
+// Named OUT_MODE, not OUTPUT: the esp32 core's Arduino.h #defines OUTPUT as a
+// pinMode() constant (0x03), which would otherwise collide with this enumerator.
+enum Mode { ACTIVE, IDLE, OUT_MODE };
 static Mode  mode       = IDLE;
 static int   activeKnob = -1;
 static float targetVol  = 0.0f;
@@ -62,6 +79,16 @@ static int   uploadPct   = -1;     // last-drawn progress percentage
 
 static unsigned long lastAnimMs = 0;
 static unsigned long lastIdleMs = 0;
+
+static int      outPos       = -1;    // card currently shown (-1 = none)
+static int      outPrevPos   = -1;    // card sliding out (-1 = nothing to slide out)
+static uint8_t  outState     = OUT_PENDING;
+static bool     outDirty     = false; // full (re)entry: clear, draw ring, start the slide
+static bool     outBandDirty = false; // state changed after the slide: repaint in place
+static unsigned long outAnimStart = 0;
+
+static TFT_eSprite outSpr   = TFT_eSprite(&tft);
+static bool        outSprOK = false;
 
 // Idle dot tracking: store previous positions to erase before redraw
 static int prevDotX[3] = {-100, -100, -100};
@@ -300,6 +327,128 @@ static void animateIdle(unsigned long now) {
   }
 }
 
+// ── Output card ───────────────────────────────────────────────────────────────
+
+static const char* outText(int pos, uint8_t state) {
+  if (state == OUT_NONE) return "Not assigned";
+  if (state == OUT_FAIL) return "Unavailable";
+  if (pos >= 0 && pos < OUT_POSITIONS && outLabel[pos][0]) return outLabel[pos];
+  return "-";   // no outset: received yet (cold boot). Not an error state.
+}
+
+static uint16_t outTextColor(uint8_t state) {
+  return (state == OUT_NONE || state == OUT_FAIL) ? OUT_RED : TFT_WHITE;
+}
+
+// Full-sweep ring. Deliberately NOT accent(): that reads knobColor[activeKnob],
+// and the output card belongs to no knob.
+static void drawOutRing(uint8_t state) {
+  uint16_t c = (state == OUT_NONE || state == OUT_FAIL) ? OUT_RED : ACCENT_DEFAULT;
+  tft.drawSmoothArc(CX, CY, ARC_R + ARC_W / 2, ARC_R - ARC_W / 2,
+                    (uint32_t)ARC_A0, (uint32_t)(ARC_A0 + SWEEP), c, TFT_BLACK, true);
+}
+
+// Render one card into outSpr with its top edge at band-local y = dy. dy may be
+// negative or past BAND_H — the sprite clips, which is what makes the slide work.
+static void drawOutCard(int pos, int dy, uint8_t state) {
+  const uint16_t* icon = (outKind[pos] == OUT_KIND_HEADPHONE) ? HEADPHONE_ICON : SPEAKER_ICON;
+  // Both glyphs are generated at 48x48; host-endian RGB565 needs the byte swap,
+  // same as the app-icon push in fullActiveRedraw.
+  outSpr.setSwapBytes(true);
+  outSpr.pushImage(BAND_W / 2 - HEADPHONE_ICON_W / 2, dy + 4,
+                   HEADPHONE_ICON_W, HEADPHONE_ICON_H, icon);
+  outSpr.setSwapBytes(false);
+
+  outSpr.setTextDatum(MC_DATUM);
+  outSpr.setTextSize(1);
+  outSpr.setTextFont(2);
+  outSpr.setTextColor(outTextColor(state), TFT_BLACK);
+  outSpr.drawString(outText(pos, state), BAND_W / 2, dy + 66);
+
+  outSpr.setTextFont(1);
+  outSpr.setTextColor(ACCENT_DEFAULT, TFT_BLACK);
+  outSpr.drawString(pos == 1 ? "B" : "A", BAND_W / 2, dy + 88);
+}
+
+// Same card straight to the panel. Used when the band sprite can't be allocated
+// and for the in-place repaint when "out:" lands after the slide finished.
+static void drawOutCardDirect(int pos, uint8_t state) {
+  tft.fillRect(BAND_X, BAND_Y, BAND_W, BAND_H, TFT_BLACK);
+
+  const uint16_t* icon = (outKind[pos] == OUT_KIND_HEADPHONE) ? HEADPHONE_ICON : SPEAKER_ICON;
+  tft.setSwapBytes(true);
+  tft.pushImage(CX - HEADPHONE_ICON_W / 2, BAND_Y + 4,
+                HEADPHONE_ICON_W, HEADPHONE_ICON_H, icon);
+  tft.setSwapBytes(false);
+
+  tft.setTextDatum(MC_DATUM);
+  tft.setTextSize(1);
+  tft.setTextFont(2);
+  tft.setTextColor(outTextColor(state), TFT_BLACK);
+  tft.drawString(outText(pos, state), CX, BAND_Y + 66);
+
+  tft.setTextFont(1);
+  tft.setTextColor(ACCENT_DEFAULT, TFT_BLACK);
+  tft.drawString(pos == 1 ? "B" : "A", CX, BAND_Y + 88);
+}
+
+// Free the band sprite. Called on every path that leaves OUTPUT mode — ~50 KB
+// must not stay resident once the slide is over.
+static void outReleaseSprite() {
+  if (outSprOK) {
+    outSpr.deleteSprite();
+    outSprOK = false;
+  }
+}
+
+// Per-frame step, called from displayTick at ANIM_DT while mode == OUTPUT.
+static void outputTick(unsigned long now) {
+  if (outDirty) {
+    tft.fillScreen(TFT_BLACK);
+    drawOutRing(outState);
+    outSprOK     = (outSpr.createSprite(BAND_W, BAND_H) != nullptr);
+    outAnimStart = now;
+    outDirty     = false;
+    outBandDirty = false;
+    if (!outSprOK) {
+      // No RAM for the band: skip the slide, draw the final card directly. The
+      // screen is still correct, just without the transition.
+      drawOutCardDirect(outPos, outState);
+      outPrevPos = -1;
+      return;
+    }
+  }
+
+  if (outSprOK) {
+    float t = (float)(now - outAnimStart) / (float)OUT_SLIDE_MS;
+    if (t > 1.0f) t = 1.0f;
+    float e = 1.0f - (1.0f - t) * (1.0f - t);   // ease-out quad
+
+    // B enters from below, A from above — matching the toggle's throw, and
+    // independent of whichever screen preceded the card.
+    int dir = (outPos == 1) ? 1 : -1;
+    int off = (int)(BAND_H * (1.0f - e) * dir);
+
+    outSpr.fillSprite(TFT_BLACK);
+    if (outPrevPos >= 0)
+      drawOutCard(outPrevPos, off - BAND_H * dir, OUT_OK);
+    drawOutCard(outPos, off, outState);
+    outSpr.pushSprite(BAND_X, BAND_Y);
+
+    if (t >= 1.0f) {
+      outReleaseSprite();
+      outPrevPos = -1;
+    }
+    return;
+  }
+
+  if (outBandDirty) {
+    drawOutRing(outState);
+    drawOutCardDirect(outPos, outState);
+    outBandDirty = false;
+  }
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 void displaySetup() {
@@ -324,6 +473,7 @@ void displaySetShowPercent(bool show) {
 void displayShowMute(int knobIndex, bool muted) {
   if (knobIndex < 0 || knobIndex >= MAX_KNOBS) return;
   if (gifMode) { idleGifStop(); gifMode = false; }
+  outReleaseSprite();
   if (mode != ACTIVE || knobIndex != activeKnob) {
     activeKnob = knobIndex;
     appDirty   = true;
@@ -339,6 +489,7 @@ void displayShowKnob(int knobIndex, float value) {
   if (knobIndex < 0 || knobIndex >= MAX_KNOBS) return;
   value = constrain(value, 0.0f, 1.0f);
   if (gifMode) { idleGifStop(); gifMode = false; }
+  outReleaseSprite();
   if (mode != ACTIVE || knobIndex != activeKnob) {
     activeKnob = knobIndex;
     appDirty   = true;
@@ -352,8 +503,30 @@ void displayShowKnob(int knobIndex, float value) {
 // Call when all knobs are idle. Switches to IDLE animated screen.
 void displayEnterIdle() {
   if (mode == IDLE) return;
+  outReleaseSprite();
   mode      = IDLE;
   idleDirty = true;
+}
+
+// Call when the output changes — locally when the toggle moves (state =
+// OUT_PENDING) or from an "out:" line once the PC has routed. Re-entry with the
+// position already on screen repaints in place instead of re-sliding.
+void displayShowOutput(int pos, uint8_t state) {
+  if (pos < 0 || pos >= OUT_POSITIONS) return;
+  if (uploadMode) return;   // the upload screen owns the display until it finishes
+  if (gifMode) { idleGifStop(); gifMode = false; }
+
+  if (mode == OUT_MODE && pos == outPos) {
+    outState     = state;
+    outBandDirty = true;
+    return;
+  }
+
+  outPrevPos   = (mode == OUT_MODE) ? outPos : -1;
+  outPos       = pos;
+  outState     = state;
+  mode         = OUT_MODE;
+  outDirty     = true;
 }
 
 // ── GIF-upload progress screen ──────────────────────────────────────────────
@@ -442,6 +615,11 @@ void displayTick() {
       if (shownVol != targetVol || lastPct < 0) {
         animateActive();
       }
+    }
+  } else if (mode == OUT_MODE) {
+    if (now - lastAnimMs >= ANIM_DT) {
+      lastAnimMs = now;
+      outputTick(now);
     }
   } else { // IDLE
     // A GIF added/cleared while already idle: re-init to switch screens.
