@@ -71,7 +71,9 @@ title bar, resizable nav-pane splitter, and a "minimize to tray vs quit" close d
   - `IdleGifViewModel` — wraps one `IdleGifConfig` for the library UI.
 
 - **Core services / logic** (`Core/`):
-  - `AudioManager.cs` — wraps NAudio against the default **render** endpoint. `GetSessions()` enumerates
+  - `AudioManager.cs` — wraps NAudio against the default **render** endpoint, obtained from
+    `DefaultRenderEndpoint` (which re-resolves it per access, so the mixer follows the default output
+    when it changes — including when Dialed's own output switch changes it). `GetSessions()` enumerates
     sessions, resolves each to a process, dedupes, and appends a synthetic master channel
     (`MasterVolumeProcessName = "System Volume"`). Also extracts each app's icon to a canonical 64×64 BGRA
     buffer (persisted via `IconStore`), and derives a dominant accent color and an RGB565 buffer for the
@@ -113,7 +115,10 @@ title bar, resizable nav-pane splitter, and a "minimize to tray vs quit" close d
 - **Settings persist on every change** — the `[ObservableProperty]` `partial void On…Changed` handlers in
   `MainViewModel` write through `SettingsService.Save`. There's no explicit "save" button.
 - `AudioManager` targets only the default **render** endpoint and silently ignores sessions whose process
-  can't be resolved (system sounds, elevated/cross-bitness processes).
+  can't be resolved (system sounds, elevated/cross-bitness processes). Never cache that endpoint in a
+  field: the default output changes constantly (headset plugged in, user switch, Dialed's own output
+  switch), and a pinned `MMDevice` leaves the master channel driving a device nobody is listening to.
+  Go through `DefaultRenderEndpoint.Current`, which may be null when the machine has no active output.
 - Session and output-device lists are **polled** on a `DispatcherTimer` (default 2s), not event-driven.
 - **Upgrade-while-running is a contract between app and installer.** `MainWindow` subclasses the window
   proc to answer `WM_QUERYENDSESSION`/`WM_ENDSESSION` (exiting cleanly, bypassing the minimize-to-tray
