@@ -458,7 +458,13 @@ public partial class MainViewModel : ObservableObject
         // without any physical interaction. The volume screen should appear only
         // when the user actually turns a knob (handled locally on the device and
         // echoed back via OnKnobChanged/OnKnobDelta).
-        _serial.SendAssignment(ch.KnobIndex, ch.AppName, color, icon);
+        //
+        // The device only ever renders this string, so send the display name, not the
+        // internal one: the master channel would otherwise show the "System Volume"
+        // sentinel instead of the localized "System"/"Sistema", and regular apps their
+        // lowercase process name. ch.AppName stays the identifier everywhere else
+        // (settings, session matching, icon lookup).
+        _serial.SendAssignment(ch.KnobIndex, AudioManager.GetDisplayName(ch.AppName), color, icon);
     }
 
     private void SyncAllChannels()
