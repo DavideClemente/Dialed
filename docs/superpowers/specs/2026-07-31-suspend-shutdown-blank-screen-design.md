@@ -30,9 +30,11 @@ power-state detection at all today (no `SystemEvents.PowerModeChanged`, no sessi
 - Blanking the screen when the user manually quits the Dialed app via the tray "Quit" dialog while
   Windows keeps running. That's not a PC suspend/shutdown; the existing behavior (fall back to the normal
   idle animation) is unchanged.
-- Any physical backlight control. The documented default wiring ties the GC9A01's `BL` pin straight to
-  3.3V (see `Arduino/README.md`'s wiring table), not to a GPIO, so "blank" means painting the screen
-  black, not cutting backlight power.
+- Physical backlight power control. `BL` is hardwired to the 3.3V rail (see `Arduino/PINOUT.md`), not to a
+  GPIO, and the documented 4-encoder build already uses every safe GPIO on the board (see the pin budget
+  table in `PINOUT.md`) — there is no spare pin to route `BL` through without either dropping an encoder
+  or repurposing a strapping pin (0/2), which risks breaking boot-mode selection. See "Blank screen
+  content" below for what's achievable without a wiring change.
 
 ## Decisions (from brainstorming)
 
@@ -40,10 +42,18 @@ power-state detection at all today (no `SystemEvents.PowerModeChanged`, no sessi
 |---|---|
 | Detection mechanism | App-side: `SystemEvents.PowerModeChanged` (suspend/resume) + existing `WM_ENDSESSION` handler (shutdown/logoff) |
 | Protocol | New explicit command pair: `screen:off` / `screen:on` |
-| Blank screen content | Solid black (no text/icon) |
+| Blank screen content | Solid black *and* panel sleep (GC9A01 `DISPOFF`+`SLPIN`) — see "Backlight" below |
+| Backlight | Left as-is (hardwired to 3.3V, stays lit). No wiring change; see Non-goals |
 | Firmware scope | `Arduino/mixer/` (ESP32) only |
-| Wake behavior | Immediate — screen returns to normal the instant `screen:on` arrives, no waiting for a knob touch |
+| Wake behavior | Immediate — screen returns to normal as soon as `screen:on` arrives and the panel's mandatory ~120ms wake settle time elapses; no waiting for a knob touch |
 | Manual app "Quit" | Not treated as suspend/shutdown; screen keeps its current idle-fallback behavior |
+
+**Backlight decision:** offered the option of rewiring `BL` from the 3.3V rail to a GPIO for a true
+backlight cutoff (either sacrificing an encoder to free a pin, or repurposing a strapping pin). Rejected
+both — the software-only path (panel sleep + black fill) needs no wiring change, works on every board
+already in the field as documented in `PINOUT.md`, and still meaningfully reduces panel power draw by
+powering down the GC9A01's internal driving circuitry. The backlight LED itself stays lit; the visible
+result is a dim, uniformly dark circle rather than true darkness.
 
 Alternative considered and rejected: a firmware-only heuristic (blank after a much longer stretch of
 serial silence, no new protocol command). Rejected because it can't distinguish "PC on, app just quiet"
@@ -65,9 +75,15 @@ New PC → Board lines, parsed only by the ESP32 tier (matches the existing READ
 `display.cpp` / `display.h`:
 
 - New `static bool blankMode` and public `void displayBlank(bool blank)`:
-  - `true`: `tft.fillScreen(TFT_BLACK)` once, set `blankMode = true`.
-  - `false`: clear `blankMode`, set `idleDirty = true` and `appDirty = true` so whichever mode is active
-    redraws cleanly on the very next `displayTick()`.
+  - `true`: `tft.fillScreen(TFT_BLACK)`, then send the GC9A01 into its low-power state via raw commands
+    (`tft.writecommand(0x28)` DISPOFF, then `tft.writecommand(0x10)` SLPIN — sent as raw command bytes
+    rather than TFT_eSPI driver constants, since those aren't guaranteed defined for every driver header).
+    Set `blankMode = true`.
+  - `false`: reverse the sequence — `tft.writecommand(0x11)` SLPOUT, then a mandatory `delay(120)` before
+    any further panel command (datasheet-required wake settle time — same pattern as the existing
+    `delay(700)` in `displayUploadEnd()`), then `tft.writecommand(0x29)` DISPON. Clear `blankMode`, set
+    `idleDirty = true` and `appDirty = true` so whichever mode is active redraws cleanly on the very next
+    `displayTick()`.
 - `displayTick()` gains an early return when `blankMode` is set — the same shape as the existing
   `uploadMode` gate that already "owns the display" during a GIF upload. No idle-GIF ticking, no active-arc
   animation happens while blank.
@@ -126,7 +142,9 @@ display just by talking to the controller again.
 
 ```
 PC suspends  → SystemEvents.PowerModeChanged(Suspend) → SendScreenOff() → "screen:off" → displayBlank(true)
+                 → fillScreen(BLACK) + DISPOFF + SLPIN (panel driver powered down; backlight stays lit)
 PC resumes   → SystemEvents.PowerModeChanged(Resume)  → SendScreenOn()  → "screen:on"  → displayBlank(false)
+                 → SLPOUT + 120ms settle + DISPON, then normal redraw on the next tick
 PC shuts down → WM_ENDSESSION → ViewModel.SendScreenOff() → "screen:off" → displayBlank(true) → ExitApp()
 Device lost power during sleep → screen already dark (no power) → reboots on resume → existing
   reconnect watchdog detects port + resyncs → firmware boots into its normal fresh-boot idle state
