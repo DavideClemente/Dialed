@@ -54,6 +54,28 @@ static void handleConfigLine(const char* line) {
   }
 }
 
+static void handleOutLine(const char* line) {
+  if (strncmp(line, "out:", 4) != 0) return;
+  const char* p = line + 4;                       // "<a|b>:<state>"
+
+  int pos;
+  if      (p[0] == 'a' || p[0] == 'A') pos = 0;
+  else if (p[0] == 'b' || p[0] == 'B') pos = 1;
+  else return;
+  if (p[1] != ':') return;
+
+  const char* s = p + 2;
+  uint8_t state;
+  if      (strcmp(s, "ok")   == 0) state = OUT_OK;
+  else if (strcmp(s, "none") == 0) state = OUT_NONE;
+  else if (strcmp(s, "fail") == 0) state = OUT_FAIL;
+  else return;                                    // unknown state: ignore the line
+
+  displayShowOutput(pos, state);
+  lastKnobActivity = millis();
+  isIdle = false;
+}
+
 static void sendFirmwareVersion() {
   // Symmetric with SerialManager: "fw:<board>:<version>". Does NOT touch the
   // display/idle state — it's metadata, not a knob event.
@@ -82,6 +104,8 @@ void readIncomingSerial() {
           handleVolumeLine(inLine);
           handleMuteLine(inLine);
           handleConfigLine(inLine);
+          handleOutSetLine(inLine);
+          handleOutLine(inLine);
           handleVerLine(inLine);
         }
         inPos = 0;
@@ -104,9 +128,20 @@ void onKnobChange(const char* id, float value) {
   isIdle = false;
 }
 
+// The toggle moved. Draw the card immediately from stored assignment data — the
+// PC's "out:" confirmation may never arrive (Dialed closed) and must not be
+// waited on. Counts as activity, so the card dwells for cfg:idle:<ms> and then
+// falls to the idle screen through the normal loop() check.
+void onSwitchChange(int pos) {
+  displayShowOutput(pos, OUT_PENDING);
+  lastKnobActivity = millis();
+  isIdle = false;
+}
+
 void setup() {
   displaySetup();
   knobsSetup(onKnobChange);   // knobsSetup calls Serial.begin(921600)
+  knobsSetSwitchCallback(onSwitchChange);
   sendFirmwareVersion();      // announce firmware version to the PC on boot
   lastKnobActivity = millis();
 }
