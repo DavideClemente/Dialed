@@ -90,6 +90,10 @@ static unsigned long outAnimStart = 0;
 static TFT_eSprite outSpr   = TFT_eSprite(&tft);
 static bool        outSprOK = false;
 
+// Last state actually rendered for each position, kept for the outgoing
+// (sliding-out) card during a transition — see outputTick.
+static uint8_t outLastState[OUT_POSITIONS] = { OUT_PENDING, OUT_PENDING };
+
 // Idle dot tracking: store previous positions to erase before redraw
 static int prevDotX[3] = {-100, -100, -100};
 static int prevDotY[3] = {-100, -100, -100};
@@ -402,10 +406,17 @@ static void outReleaseSprite() {
 }
 
 // Per-frame step, called from displayTick at ANIM_DT while mode == OUTPUT.
+//
+// The ring (drawOutRing) shares its full sweep with the volume screen's track
+// arc, so it legitimately paints pixels at the ring's left/right "equator"
+// (y=120, x≈8-17 and x≈223-232) which fall inside the full-width card band
+// (BAND_X=0..240, BAND_Y=58..162). Every path below that repaints the band
+// therefore redraws the ring again immediately afterward — the same
+// self-healing, redraw-every-frame approach animateActive() uses for the
+// volume gauge's arc — so the band paint never leaves a permanent gap in it.
 static void outputTick(unsigned long now) {
   if (outDirty) {
     tft.fillScreen(TFT_BLACK);
-    drawOutRing(outState);
     outSprOK     = (outSpr.createSprite(BAND_W, BAND_H) != nullptr);
     outAnimStart = now;
     outDirty     = false;
@@ -414,6 +425,8 @@ static void outputTick(unsigned long now) {
       // No RAM for the band: skip the slide, draw the final card directly. The
       // screen is still correct, just without the transition.
       drawOutCardDirect(outPos, outState);
+      drawOutRing(outState);
+      outLastState[outPos] = outState;
       outPrevPos = -1;
       return;
     }
@@ -431,20 +444,23 @@ static void outputTick(unsigned long now) {
 
     outSpr.fillSprite(TFT_BLACK);
     if (outPrevPos >= 0)
-      drawOutCard(outPrevPos, off - BAND_H * dir, OUT_OK);
+      drawOutCard(outPrevPos, off - BAND_H * dir, outLastState[outPrevPos]);
     drawOutCard(outPos, off, outState);
     outSpr.pushSprite(BAND_X, BAND_Y);
+    drawOutRing(outState);
 
     if (t >= 1.0f) {
       outReleaseSprite();
+      outLastState[outPos] = outState;
       outPrevPos = -1;
     }
     return;
   }
 
   if (outBandDirty) {
-    drawOutRing(outState);
     drawOutCardDirect(outPos, outState);
+    drawOutRing(outState);
+    outLastState[outPos] = outState;
     outBandDirty = false;
   }
 }
