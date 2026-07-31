@@ -5,6 +5,7 @@ void displayShowKnob(int knobIndex, float value);
 void displayShowMute(int knobIndex, bool muted);
 void displaySetShowPercent(bool show);
 void displayEnterIdle();
+void displayBlank(bool blank);
 void displayTick();
 
 // GIF-upload progress screen (driven by idlegif.cpp while a new GIF flashes).

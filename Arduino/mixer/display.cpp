@@ -57,6 +57,7 @@ static bool  appDirty   = false;
 static bool  idleDirty  = true;
 static bool  gifMode    = false;   // idle screen is playing a stored GIF
 static bool  uploadMode = false;   // showing the GIF-upload progress screen
+static bool  blankMode  = false;   // screen frozen for PC suspend/shutdown
 static float uploadAngle = 0.0f;   // last-drawn progress arc angle
 static int   uploadPct   = -1;     // last-drawn progress percentage
 
@@ -322,6 +323,7 @@ void displaySetShowPercent(bool show) {
 }
 
 void displayShowMute(int knobIndex, bool muted) {
+  if (blankMode) return;
   if (knobIndex < 0 || knobIndex >= MAX_KNOBS) return;
   if (gifMode) { idleGifStop(); gifMode = false; }
   if (mode != ACTIVE || knobIndex != activeKnob) {
@@ -336,6 +338,7 @@ void displayShowMute(int knobIndex, bool muted) {
 // Call when a knob is turned / selected. Switches to ACTIVE mode for knobIndex,
 // sets the target volume (0..1). Triggers a full redraw if the app changed.
 void displayShowKnob(int knobIndex, float value) {
+  if (blankMode) return;
   if (knobIndex < 0 || knobIndex >= MAX_KNOBS) return;
   value = constrain(value, 0.0f, 1.0f);
   if (gifMode) { idleGifStop(); gifMode = false; }
@@ -354,6 +357,31 @@ void displayEnterIdle() {
   if (mode == IDLE) return;
   mode      = IDLE;
   idleDirty = true;
+}
+
+// Freeze/unfreeze the display for PC suspend/shutdown (blank=true) and PC
+// resume/reconnect (blank=false). Blanking also sends the GC9A01 into its own
+// sleep state (DISPOFF+SLPIN) — real power savings on the panel's driving
+// circuitry, though the backlight itself stays lit (it's hardwired to 3.3V,
+// not GPIO-controlled — see Arduino/PINOUT.md). Waking reverses the sequence
+// (SLPOUT, a mandatory settle delay, then DISPON) before the normal redraw
+// resumes on the next displayTick().
+void displayBlank(bool blank) {
+  if (blank == blankMode) return;
+
+  if (blank) {
+    tft.fillScreen(TFT_BLACK);
+    tft.writecommand(0x28);  // DISPOFF
+    tft.writecommand(0x10);  // SLPIN
+    blankMode = true;
+  } else {
+    tft.writecommand(0x11);  // SLPOUT
+    delay(120);               // panel-mandated wake settle time before further commands
+    tft.writecommand(0x29);  // DISPON
+    blankMode = false;
+    idleDirty = true;
+    appDirty  = true;
+  }
 }
 
 // ── GIF-upload progress screen ──────────────────────────────────────────────
@@ -428,6 +456,7 @@ void displayUploadEnd(bool ok) {
 
 // Call every loop(). Advances animation state and redraws only changed regions.
 void displayTick() {
+  if (blankMode) return;    // screen frozen for PC suspend/shutdown — see displayBlank()
   if (uploadMode) return;   // upload screen owns the display until it finishes
   unsigned long now = millis();
 
