@@ -132,6 +132,33 @@ public class SerialManager
         catch { }
     }
 
+    // Pushes what's assigned to an output position. The analogue of SendAssignment:
+    // the device stores it silently and stays on whatever screen it's showing, so
+    // this is safe to send on connect. Its counterpart SendOutputSwitch is NOT.
+    public void SendOutputAssignment(int position, bool isHeadset, string name)
+    {
+        if (!_port.IsOpen) return;
+        try
+        {
+            var pos = position == 0 ? "a" : "b";
+            var kind = isHeadset ? "h" : "s";
+            var safeName = name.Replace("\r", "").Replace("\n", "");
+            _port.WriteLine($"outset:{pos}:{kind}:{safeName}");
+        }
+        catch { }
+    }
+
+    // Reports the result of a switch. This DOES wake the device's screen (it shows
+    // the output card), so it must only ever follow a real switch — never a connect
+    // or a poll-detected default-device change. Same rule as SendVolume.
+    // state: "ok" | "none" (nothing assigned to that position) | "fail" (routing failed).
+    public void SendOutputSwitch(int position, string state)
+    {
+        if (!_port.IsOpen) return;
+        try { _port.WriteLine($"out:{(position == 0 ? "a" : "b")}:{state}"); }
+        catch { }
+    }
+
     // Accumulates inbound bytes across DataReceived events so a line split across two
     // reads is still dispatched exactly once.
     private readonly StringBuilder _rxBuffer = new();
