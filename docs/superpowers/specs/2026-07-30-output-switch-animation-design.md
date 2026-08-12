@@ -23,7 +23,7 @@ This adds a fifth screen: an output card that slides in when the output changes.
 |---|---|
 | What the card shows | Position marker **and** the real Windows endpoint name |
 | Transition | Vertical slot slide, direction matching the toggle's throw |
-| Triggers | Hardware toggle **and** in-app card taps; not poll-detected default changes |
+| Triggers | Hardware toggle **and** in-app card taps (including reassigning the *active* position's device via its dropdown, which re-routes and re-fires `Activate()` too); not poll-detected default changes |
 | Dwell | Reuses the existing `cfg:idle:<ms>` knob idle timeout |
 | Failure | Explicit red state on screen; "no PC connected" stays neutral |
 
@@ -88,9 +88,10 @@ place.
   whole card as one unit. (An earlier revision also drew the A/B position letter beneath
   the name; dropped after on-device testing showed it added nothing the user didn't
   already know from the physical toggle's position.)
-- **Glyphs** — two 48×48 RGB565 bitmaps (headphone, speaker) in a generated
-  `output_icons.h`, produced the same way `mute_icon.h` was, via
-  `Arduino/tools/emoji_to_progmem.py`. ~9 KB of flash.
+- **Glyphs** — two 48×48 RGB565 bitmaps (headphone, speaker) in generated
+  `Arduino/mixer/headphone_icon.h` and `Arduino/mixer/speaker_icon.h`, produced
+  the same way `mute_icon.h` was, via `Arduino/tools/emoji_to_progmem.py`. ~9 KB
+  of flash.
 
 ### The slide
 

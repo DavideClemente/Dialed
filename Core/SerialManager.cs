@@ -33,7 +33,16 @@ public class SerialManager
     // Position of the two-way output switch: 0 = A, 1 = B. The controller sends
     // "switch:0" / "switch:1" (or "switch:a" / "switch:b") whenever the toggle
     // moves; the app re-routes the Windows default output device in response.
-    public event Action<int>? SwitchChanged;
+    // The bool is isInitial: true only for the very first "switch:" line seen on
+    // this connection — the firmware always reports the toggle's resting position
+    // on boot/reconnect even though the user didn't touch anything, and that first
+    // announcement must not wake the device's display (see OutputViewModel.Activate).
+    public event Action<int, bool>? SwitchChanged;
+
+    // Whether a "switch:" line has been seen yet on this connection. A fresh
+    // SerialManager is constructed on every reconnect (CreateAndStartSerial in
+    // MainViewModel), so this naturally resets per-connection.
+    private bool _sawSwitchLine;
 
     // The controller reports its firmware as "fw:<board>:<version>" on boot and in
     // reply to "ver?". Metadata only — handlers must not touch the device screen.
@@ -235,10 +244,12 @@ public class SerialManager
 
         if (knobId == "switch")
         {
+            var isInitial = !_sawSwitchLine;
+            _sawSwitchLine = true;
             if (payload is "0" or "a" or "A")
-                SwitchChanged?.Invoke(0);
+                SwitchChanged?.Invoke(0, isInitial);
             else if (payload is "1" or "b" or "B")
-                SwitchChanged?.Invoke(1);
+                SwitchChanged?.Invoke(1, isInitial);
             return;
         }
 

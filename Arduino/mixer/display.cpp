@@ -43,12 +43,18 @@ static const int TIP_DOT_R = 3;
 // ── Output card ───────────────────────────────────────────────────────────────
 // Everything that changes between the two positions lives in one band, so the
 // slide moves the whole card as a single sprite push. Band spans y=58..162:
-// icon at +4 (48 tall), name centered at +66, position letter at +88.
+// icon at +4 (48 tall), name centered at +66.
 static const int BAND_X = 0;
 static const int BAND_Y = 58;
 static const int BAND_W = 240;
 static const int BAND_H = 104;
 static const unsigned long OUT_SLIDE_MS = 300;
+
+// Both HEADPHONE_ICON and SPEAKER_ICON are generated at 48x48 today; sized
+// independently of HEADPHONE_ICON_W/H so a future regeneration at a different
+// size can't silently mis-size whichever glyph isn't selected.
+static const int OUT_ICON_W = 48;
+static const int OUT_ICON_H = 48;
 
 // Soft red, same value the upload screen uses for "Failed".
 static const uint16_t OUT_RED = 0xF9A6;
@@ -371,7 +377,7 @@ static void drawOutCard(int pos, int dy, uint8_t state) {
   // same as the app-icon push in fullActiveRedraw.
   outSpr.setSwapBytes(true);
   outSpr.pushImage(BAND_W / 2 - HEADPHONE_ICON_W / 2, dy + 4,
-                   HEADPHONE_ICON_W, HEADPHONE_ICON_H, icon);
+                   OUT_ICON_W, OUT_ICON_H, icon);
   outSpr.setSwapBytes(false);
 
   outSpr.setTextDatum(MC_DATUM);
@@ -389,7 +395,7 @@ static void drawOutCardDirect(int pos, uint8_t state) {
   const uint16_t* icon = (outKind[pos] == OUT_KIND_HEADPHONE) ? HEADPHONE_ICON : SPEAKER_ICON;
   tft.setSwapBytes(true);
   tft.pushImage(CX - HEADPHONE_ICON_W / 2, BAND_Y + 4,
-                HEADPHONE_ICON_W, HEADPHONE_ICON_H, icon);
+                OUT_ICON_W, OUT_ICON_H, icon);
   tft.setSwapBytes(false);
 
   tft.setTextDatum(MC_DATUM);
@@ -399,7 +405,7 @@ static void drawOutCardDirect(int pos, uint8_t state) {
   tft.drawString(outText(pos, state), CX, BAND_Y + 66);
 }
 
-// Free the band sprite. Called on every path that leaves OUTPUT mode — ~50 KB
+// Free the band sprite. Called on every path that leaves OUT_MODE — ~50 KB
 // must not stay resident once the slide is over.
 static void outReleaseSprite() {
   if (outSprOK) {
@@ -408,7 +414,7 @@ static void outReleaseSprite() {
   }
 }
 
-// Per-frame step, called from displayTick at ANIM_DT while mode == OUTPUT.
+// Per-frame step, called from displayTick at ANIM_DT while mode == OUT_MODE.
 //
 // The ring (drawOutRing) shares its full sweep with the volume screen's track
 // arc, so it legitimately paints pixels at the ring's left/right "equator"
@@ -431,7 +437,7 @@ static void outReleaseSprite() {
 // and isn't worth the extra complexity of composing through a sprite too.
 static void outputTick(unsigned long now) {
   if (outDirty) {
-    tft.fillScreen(TFT_BLACK);
+    if (outPrevPos < 0) tft.fillScreen(TFT_BLACK);
     outSprOK     = (outSpr.createSprite(BAND_W, BAND_H) != nullptr);
     outAnimStart = now;
     outDirty     = false;
@@ -463,10 +469,10 @@ static void outputTick(unsigned long now) {
     int off = (int)(BAND_H * (1.0f - e) * dir);
 
     outSpr.fillSprite(TFT_BLACK);
+    drawOutRingIntoSprite(outState);
     if (outPrevPos >= 0)
       drawOutCard(outPrevPos, off - BAND_H * dir, outLastState[outPrevPos]);
     drawOutCard(outPos, off, outState);
-    drawOutRingIntoSprite(outState);
     outSpr.pushSprite(BAND_X, BAND_Y);
 
     if (t >= 1.0f) {
@@ -579,6 +585,7 @@ static void uploadLabel(const char* text, uint16_t color) {
 }
 
 void displayUploadBegin() {
+  outReleaseSprite();
   uploadMode  = true;
   uploadAngle = ARC_A0;
   uploadPct   = -1;
@@ -632,6 +639,7 @@ void displayUploadEnd(bool ok) {
   // Force a clean redraw of whichever mode we return to (idle plays the new GIF).
   idleDirty = true;
   appDirty  = true;
+  outDirty  = true;
   lastPct   = -1;
 }
 

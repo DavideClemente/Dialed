@@ -5,4 +5,4 @@
 // reads these to name the merged .bin and fill manifest.json, and the app compares
 // this (reported over serial as "fw:<board>:<version>") against the bundled version.
 #define FW_BOARD   "esp32-mixer"
-#define FW_VERSION "1.2.2"
+#define FW_VERSION "1.2.3"

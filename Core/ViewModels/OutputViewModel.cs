@@ -224,18 +224,26 @@ public partial class OutputViewModel : ObservableObject
     // position the default already matches, so don't re-route — but still report
     // "ok", because the device has already drawn a pending card and is waiting to
     // have it confirmed.
-    public void ApplySwitchPosition(int position)
+    // isInitial: true only for the very first switch reading reported after a
+    // (re)connect — the firmware's boot-suppression guard already skips its local
+    // display callback for that sample, but still prints the "switch:" line to the
+    // PC, so this side must independently avoid raising SwitchApplied (which would
+    // otherwise wake the device's screen showing "-" before outset: has synced).
+    // App-side state (ActivePosition, StatusText, routing, RefreshDefaults) still
+    // updates normally — only the wire event to the device is suppressed.
+    public void ApplySwitchPosition(int position, bool isInitial = false)
     {
         var target = position == 0 ? OutputPosition.A : OutputPosition.B;
         if (ActivePosition == target)
         {
-            SwitchApplied?.Invoke(position, "ok");
+            if (!isInitial)
+                SwitchApplied?.Invoke(position, "ok");
             return;
         }
-        Activate(target);
+        Activate(target, isInitial);
     }
 
-    private void Activate(OutputPosition position)
+    private void Activate(OutputPosition position, bool isInitial = false)
     {
         var device = position == OutputPosition.A ? SelectedDeviceA : SelectedDeviceB;
         var label = position == OutputPosition.A ? "A" : "B";
@@ -244,7 +252,8 @@ public partial class OutputViewModel : ObservableObject
         if (device is null)
         {
             StatusText = Loc.Get("Output_AssignFirst", label);
-            SwitchApplied?.Invoke(index, "none");
+            if (!isInitial)
+                SwitchApplied?.Invoke(index, "none");
             return;
         }
 
@@ -252,12 +261,14 @@ public partial class OutputViewModel : ObservableObject
         {
             ActivePosition = position;
             StatusText = Loc.Get("Output_Switched", device.Name);
-            SwitchApplied?.Invoke(index, "ok");
+            if (!isInitial)
+                SwitchApplied?.Invoke(index, "ok");
         }
         else
         {
             StatusText = Loc.Get("Output_SwitchFailed", device.Name);
-            SwitchApplied?.Invoke(index, "fail");
+            if (!isInitial)
+                SwitchApplied?.Invoke(index, "fail");
         }
 
         RefreshDefaults();

@@ -694,12 +694,12 @@ public partial class MainViewModel : ObservableObject
         });
     }
 
-    private void OnSwitchChanged(int position)
+    private void OnSwitchChanged(int position, bool isInitial)
     {
         _dispatcherQueue.TryEnqueue(() =>
         {
             LogSerial($"switch → position {(position == 0 ? "A" : "B")}");
-            Output.ApplySwitchPosition(position);
+            Output.ApplySwitchPosition(position, isInitial);
         });
     }
 
