@@ -54,6 +54,14 @@ static void handleConfigLine(const char* line) {
   }
 }
 
+static void handleScreenLine(const char* line) {
+  if (strcmp(line, "screen:off") == 0) {
+    displayBlank(true);
+  } else if (strcmp(line, "screen:on") == 0) {
+    displayBlank(false);
+  }
+}
+
 static void sendFirmwareVersion() {
   // Symmetric with SerialManager: "fw:<board>:<version>". Does NOT touch the
   // display/idle state — it's metadata, not a knob event.
@@ -82,6 +90,7 @@ void readIncomingSerial() {
           handleVolumeLine(inLine);
           handleMuteLine(inLine);
           handleConfigLine(inLine);
+          handleScreenLine(inLine);
           handleVerLine(inLine);
         }
         inPos = 0;
