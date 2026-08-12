@@ -83,9 +83,11 @@ place.
   `PENDING`/`OK`, the upload screen's soft red (0xF9A6) for `NONE`/`FAIL`. The ring alone
   signals whether the switch took. It does not use `accent()` — that reads
   `knobColor[activeKnob]`, and the output card belongs to no knob.
-- **Card band** — `y = 58..162`, full width. Contains a 48×48 glyph, the device name in
-  font 2 below it, and the position letter below that. Everything that changes lives in
-  the band, so the slide moves the whole card as one unit.
+- **Card band** — `y = 58..162`, full width. Contains a 48×48 glyph and the device name
+  in font 2 below it. Everything that changes lives in the band, so the slide moves the
+  whole card as one unit. (An earlier revision also drew the A/B position letter beneath
+  the name; dropped after on-device testing showed it added nothing the user didn't
+  already know from the physical toggle's position.)
 - **Glyphs** — two 48×48 RGB565 bitmaps (headphone, speaker) in a generated
   `output_icons.h`, produced the same way `mute_icon.h` was, via
   `Arduino/tools/emoji_to_progmem.py`. ~9 KB of flash.

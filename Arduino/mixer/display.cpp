@@ -352,6 +352,17 @@ static void drawOutRing(uint8_t state) {
                     (uint32_t)ARC_A0, (uint32_t)(ARC_A0 + SWEEP), c, TFT_BLACK, true);
 }
 
+// Same ring, composited into the band sprite instead of the panel — see the
+// comment on outputTick for why the animated path needs this instead of a
+// second drawOutRing() call after pushSprite(). TFT_eSprite publicly extends
+// TFT_eSPI, so drawSmoothArc works on it directly; sprite-local coordinates
+// just shift the center by the band's screen offset.
+static void drawOutRingIntoSprite(uint8_t state) {
+  uint16_t c = (state == OUT_NONE || state == OUT_FAIL) ? OUT_RED : ACCENT_DEFAULT;
+  outSpr.drawSmoothArc(CX - BAND_X, CY - BAND_Y, ARC_R + ARC_W / 2, ARC_R - ARC_W / 2,
+                       (uint32_t)ARC_A0, (uint32_t)(ARC_A0 + SWEEP), c, TFT_BLACK, true);
+}
+
 // Render one card into outSpr with its top edge at band-local y = dy. dy may be
 // negative or past BAND_H — the sprite clips, which is what makes the slide work.
 static void drawOutCard(int pos, int dy, uint8_t state) {
@@ -368,10 +379,6 @@ static void drawOutCard(int pos, int dy, uint8_t state) {
   outSpr.setTextFont(2);
   outSpr.setTextColor(outTextColor(state), TFT_BLACK);
   outSpr.drawString(outText(pos, state), BAND_W / 2, dy + 66);
-
-  outSpr.setTextFont(1);
-  outSpr.setTextColor(ACCENT_DEFAULT, TFT_BLACK);
-  outSpr.drawString(pos == 1 ? "B" : "A", BAND_W / 2, dy + 88);
 }
 
 // Same card straight to the panel. Used when the band sprite can't be allocated
@@ -390,10 +397,6 @@ static void drawOutCardDirect(int pos, uint8_t state) {
   tft.setTextFont(2);
   tft.setTextColor(outTextColor(state), TFT_BLACK);
   tft.drawString(outText(pos, state), CX, BAND_Y + 66);
-
-  tft.setTextFont(1);
-  tft.setTextColor(ACCENT_DEFAULT, TFT_BLACK);
-  tft.drawString(pos == 1 ? "B" : "A", CX, BAND_Y + 88);
 }
 
 // Free the band sprite. Called on every path that leaves OUTPUT mode — ~50 KB
@@ -411,9 +414,21 @@ static void outReleaseSprite() {
 // arc, so it legitimately paints pixels at the ring's left/right "equator"
 // (y=120, x≈8-17 and x≈223-232) which fall inside the full-width card band
 // (BAND_X=0..240, BAND_Y=58..162). Every path below that repaints the band
-// therefore redraws the ring again immediately afterward — the same
-// self-healing, redraw-every-frame approach animateActive() uses for the
-// volume gauge's arc — so the band paint never leaves a permanent gap in it.
+// therefore needs the ring redrawn too, or the band paint leaves a permanent
+// gap in it.
+//
+// The animated path (outSprOK) bakes the ring into the sprite itself
+// (drawOutRingIntoSprite) rather than drawing it on the panel after
+// pushSprite(), as a separate post-push tft.drawSmoothArc() call once did.
+// The GC9A01 has no back-buffer, so the gap between pushSprite() (which
+// blanks the ring's overlap with the band) and a following draw call was
+// visible on real hardware — briefly on a single frame, but the slide repaints
+// ~19 times over its ~300ms run, so it read as a flicker at the ring's sides.
+// Compositing the ring into the sprite first makes it arrive with the card in
+// the same atomic push. The two non-animated paths below (sprite-alloc
+// failure, and the in-place repaint once a slide has finished) draw a single
+// settled frame each, so their sequential band-then-ring draw doesn't repeat
+// and isn't worth the extra complexity of composing through a sprite too.
 static void outputTick(unsigned long now) {
   if (outDirty) {
     tft.fillScreen(TFT_BLACK);
@@ -430,6 +445,11 @@ static void outputTick(unsigned long now) {
       outPrevPos = -1;
       return;
     }
+    // Draws the ring's portion outside the band (top/bottom arcs, which the
+    // band never touches) immediately. The per-frame block below supersedes
+    // the overlapping portion via the sprite on the very same tick, so this
+    // doesn't cause a visible seam.
+    drawOutRing(outState);
   }
 
   if (outSprOK) {
@@ -446,8 +466,8 @@ static void outputTick(unsigned long now) {
     if (outPrevPos >= 0)
       drawOutCard(outPrevPos, off - BAND_H * dir, outLastState[outPrevPos]);
     drawOutCard(outPos, off, outState);
+    drawOutRingIntoSprite(outState);
     outSpr.pushSprite(BAND_X, BAND_Y);
-    drawOutRing(outState);
 
     if (t >= 1.0f) {
       outReleaseSprite();
