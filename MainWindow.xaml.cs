@@ -200,7 +200,10 @@ namespace Dialed
                 case WM_ENDSESSION:
                     // wParam == 0 means the shutdown was cancelled elsewhere.
                     if (wParam != IntPtr.Zero)
+                    {
+                        ViewModel.SendScreenOff();
                         ExitApp();
+                    }
                     return IntPtr.Zero;
             }
 
