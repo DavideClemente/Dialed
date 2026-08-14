@@ -498,6 +498,11 @@ public partial class MainViewModel : ObservableObject
 
     private void SyncAllChannels()
     {
+        // A controller that was blanked for suspend/shutdown and kept power stays asleep until told
+        // otherwise — no other message clears blankMode. Idempotent on the device (displayBlank()
+        // early-returns on a same-state call) and silently ignored by pre-1.2.0 firmware.
+        _serial.SendScreenOn();
+
         // The controller resets its idle timeout to a built-in default on boot, so
         // push the configured value whenever we (re)sync after a connect.
         _serial.SendIdleTimeout(IdleTimeoutSeconds * 1000);
