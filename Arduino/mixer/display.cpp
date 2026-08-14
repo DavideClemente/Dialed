@@ -586,6 +586,11 @@ static void uploadLabel(const char* text, uint16_t color) {
 
 void displayUploadBegin() {
   outReleaseSprite();
+  // If a slide was mid-flight, its outPrevPos survives the sprite release. Left
+  // set, outputTick's OUT_MODE-to-OUT_MODE fillScreen guard (see Minor #10) would
+  // skip the full clear on the way back out of the upload screen, ghosting the
+  // upload text below the card band until the next ACTIVE/IDLE entry.
+  outPrevPos  = -1;
   uploadMode  = true;
   uploadAngle = ARC_A0;
   uploadPct   = -1;
