@@ -48,6 +48,14 @@ power-state detection at all today (no `SystemEvents.PowerModeChanged`, no sessi
 | Wake behavior | Immediate — screen returns to normal as soon as `screen:on` arrives and the panel's mandatory ~120ms wake settle time elapses; no waiting for a knob touch |
 | Manual app "Quit" | Not treated as suspend/shutdown; screen keeps its current idle-fallback behavior |
 
+**Modern Standby caveat:** `Microsoft.Win32.SystemEvents.PowerModeChanged` (`PowerModes.Suspend`/`Resume`)
+fires on classic S3/S4 sleep transitions, but does NOT fire on Modern Standby (S0ix) systems — Windows uses
+a different notification (`RegisterPowerSettingNotification(GUID_CONSOLE_DISPLAY_STATE)`) for those, which
+this feature does not implement. On a Modern Standby machine, the sleep half of this feature is silently
+inert (shutdown via `WM_ENDSESSION` still works normally). This is a known, accepted limitation — not
+something to implement now — just something to check for before assuming the firmware is broken if the
+screen doesn't blank on sleep during manual verification (see Task 6).
+
 **Backlight decision:** offered the option of rewiring `BL` from the 3.3V rail to a GPIO for a true
 backlight cutoff (either sacrificing an encoder to free a pin, or repurposing a strapping pin). Rejected
 both — the software-only path (panel sleep + black fill) needs no wiring change, works on every board
@@ -129,12 +137,17 @@ public void SendScreenOn()  { if (!_port.IsOpen) return; try { _port.WriteLine("
   (`CheckConnection` in `MainViewModel.cs`) independently detects the port disappearing and reappearing
   and calls `ScheduleResync()` — that path is unchanged and already correct.
 - New public passthrough `SendScreenOff()` on `MainViewModel`, for `MainWindow` to call from outside.
+- `SyncAllChannels()` sends `SendScreenOn()` before its per-channel sync loop. This is the only thing that
+  clears `blankMode` on the firmware side after a resync — see `mixer.ino`'s `handleScreenLine` — so every
+  connect/reconnect/resync path (first launch, manual reconnect, watchdog replug, post-flash) explicitly
+  wakes a controller that was left blanked with power still on.
 
 `MainWindow.xaml.cs` — in the existing `WM_ENDSESSION` case, right before the existing `ExitApp()` call
 (only when `wParam != IntPtr.Zero`, i.e. the shutdown wasn't cancelled — same guard already there), add
-`ViewModel.SendScreenOff()`. Best-effort; wrapped by the same try/catch already inside `SerialManager`. No
-symmetric `screen:on` is needed here — the next app launch's normal connect/sync flow implicitly wakes the
-display just by talking to the controller again.
+`ViewModel.SendScreenOff()`. Best-effort; wrapped by the same try/catch already inside `SerialManager`. The
+next app launch's normal connect/sync flow sends `screen:on` as part of `SyncAllChannels()` (see the App
+section above), which explicitly wakes the display — talking to the controller alone is not enough, since
+only an explicit `screen:on` clears `blankMode`.
 
 `Arduino/README.md` — document the new `screen:off`/`screen:on` lines in the shared protocol section.
 
