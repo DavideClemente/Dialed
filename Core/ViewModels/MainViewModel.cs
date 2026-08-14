@@ -13,6 +13,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using Microsoft.Win32;
 using Windows.Storage;
 
 namespace Dialed.Core.ViewModels;
@@ -179,6 +180,11 @@ public partial class MainViewModel : ObservableObject
         _connectionTimer.Tick += (_, _) => CheckConnection();
         if (AutoReconnect)
             _connectionTimer.Start();
+
+        // Never unsubscribed — MainViewModel is a process-lifetime singleton, same as
+        // the timers above and the tray icon (MainWindow), none of which are disposed
+        // until the process exits.
+        SystemEvents.PowerModeChanged += OnPowerModeChanged;
     }
 
     // Waits for the controller to finish booting after a (re)connect, then pushes
@@ -192,6 +198,35 @@ public partial class MainViewModel : ObservableObject
             _serial.RequestFirmwareVersion();
         });
     });
+
+    // Suspend blanks the controller's display immediately; resume restores it. The
+    // controller keeps its own RAM state (labels/icons/last volume) across a sleep that
+    // doesn't cut its power, so un-blanking alone is enough — no resync needed here. If
+    // the controller *did* lose power and reboot, the existing reconnect watchdog
+    // (CheckConnection) independently detects the port reappearing and resyncs on its own.
+    // SystemEvents raises on its own internal thread, not the UI thread, hence the dispatch.
+    private void OnPowerModeChanged(object? sender, PowerModeChangedEventArgs e)
+    {
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            switch (e.Mode)
+            {
+                case PowerModes.Suspend:
+                    if (_serial.IsConnected) _serial.SendScreenOff();
+                    break;
+                case PowerModes.Resume:
+                    if (_serial.IsConnected) _serial.SendScreenOn();
+                    break;
+            }
+        });
+    }
+
+    // Best-effort blank on OS shutdown/logoff. Called directly by MainWindow's
+    // WM_ENDSESSION handler, which already runs on the UI thread — no dispatch needed.
+    public void SendScreenOff()
+    {
+        if (_serial.IsConnected) _serial.SendScreenOff();
+    }
 
     // Detects unplug (target port vanished from the system) and replug (port is back
     // while we're disconnected), tearing down / re-opening the serial handle to match.
