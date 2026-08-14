@@ -373,6 +373,7 @@ void displayBlank(bool blank) {
     tft.fillScreen(TFT_BLACK);
     tft.writecommand(0x28);  // DISPOFF
     tft.writecommand(0x10);  // SLPIN
+    delay(120);               // panel-mandated settle time before a following SLPOUT
     blankMode = true;
   } else {
     tft.writecommand(0x11);  // SLPOUT
