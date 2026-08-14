@@ -117,6 +117,24 @@ public class SerialManager
         catch { }
     }
 
+    /// <summary>Blanks and sleeps the controller's display (PC suspend/shutdown). Parsed by
+    /// handleScreenLine on the device.</summary>
+    public void SendScreenOff()
+    {
+        if (!_port.IsOpen) return;
+        try { _port.WriteLine("screen:off"); }
+        catch { }
+    }
+
+    /// <summary>Wakes and restores the controller's display (PC resume/reconnect). Parsed by
+    /// handleScreenLine on the device.</summary>
+    public void SendScreenOn()
+    {
+        if (!_port.IsOpen) return;
+        try { _port.WriteLine("screen:on"); }
+        catch { }
+    }
+
     public void SendAssignment(int knobIndex, string appName, (byte R, byte G, byte B) color, byte[] iconRgb565)
     {
         if (!_port.IsOpen) return;
