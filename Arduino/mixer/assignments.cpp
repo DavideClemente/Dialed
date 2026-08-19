@@ -5,6 +5,9 @@ uint16_t knobIcon   [MAX_KNOBS][ICON_PIXELS] = {};
 bool     knobHasIcon[MAX_KNOBS]              = {};
 uint16_t knobColor[MAX_KNOBS] = { 0x065F, 0x065F, 0x065F, 0x065F };  // default accent
 
+char    outLabel[OUT_POSITIONS][32] = {};
+uint8_t outKind [OUT_POSITIONS]     = { OUT_KIND_SPEAKER, OUT_KIND_SPEAKER };
+
 static int b64Val(char c) {
   if (c >= 'A' && c <= 'Z') return c - 'A';
   if (c >= 'a' && c <= 'z') return c - 'a' + 26;
@@ -71,5 +74,28 @@ bool handleIconLine(const char* line) {
 
   int decoded = base64Decode(colon + 1, (uint8_t*)knobIcon[idx], ICON_PIXELS * 2);
   knobHasIcon[idx] = (decoded == ICON_PIXELS * 2);
+  return true;
+}
+
+// Parse "outset:<a|b>:<h|s>:<DeviceName>"
+// Note the guard order: "out:" cannot reach here because its 4th char is ':'
+// while this line's is 's', so the two prefixes never collide.
+bool handleOutSetLine(const char* line) {
+  if (strncmp(line, "outset:", 7) != 0) return false;
+  const char* p = line + 7;                       // "<a|b>:<h|s>:<Name>"
+
+  int pos;
+  if      (p[0] == 'a' || p[0] == 'A') pos = 0;
+  else if (p[0] == 'b' || p[0] == 'B') pos = 1;
+  else return false;
+  if (p[1] != ':') return false;
+
+  const char* kindStr = p + 2;                    // "<h|s>:<Name>"
+  if (kindStr[0] == '\0' || kindStr[1] != ':') return false;
+  outKind[pos] = (kindStr[0] == 'h' || kindStr[0] == 'H')
+                 ? OUT_KIND_HEADPHONE : OUT_KIND_SPEAKER;
+
+  strncpy(outLabel[pos], kindStr + 2, 31);
+  outLabel[pos][31] = '\0';
   return true;
 }

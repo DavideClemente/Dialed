@@ -33,7 +33,16 @@ public class SerialManager
     // Position of the two-way output switch: 0 = A, 1 = B. The controller sends
     // "switch:0" / "switch:1" (or "switch:a" / "switch:b") whenever the toggle
     // moves; the app re-routes the Windows default output device in response.
-    public event Action<int>? SwitchChanged;
+    // The bool is isInitial: true only for the very first "switch:" line seen on
+    // this connection — the firmware always reports the toggle's resting position
+    // on boot/reconnect even though the user didn't touch anything, and that first
+    // announcement must not wake the device's display (see OutputViewModel.Activate).
+    public event Action<int, bool>? SwitchChanged;
+
+    // Whether a "switch:" line has been seen yet on this connection. A fresh
+    // SerialManager is constructed on every reconnect (CreateAndStartSerial in
+    // MainViewModel), so this naturally resets per-connection.
+    private bool _sawSwitchLine;
 
     // The controller reports its firmware as "fw:<board>:<version>" on boot and in
     // reply to "ver?". Metadata only — handlers must not touch the device screen.
@@ -140,6 +149,33 @@ public class SerialManager
         catch { }
     }
 
+    // Pushes what's assigned to an output position. The analogue of SendAssignment:
+    // the device stores it silently and stays on whatever screen it's showing, so
+    // this is safe to send on connect. Its counterpart SendOutputSwitch is NOT.
+    public void SendOutputAssignment(int position, bool isHeadset, string name)
+    {
+        if (!_port.IsOpen) return;
+        try
+        {
+            var pos = position == 0 ? "a" : "b";
+            var kind = isHeadset ? "h" : "s";
+            var safeName = name.Replace("\r", "").Replace("\n", "");
+            _port.WriteLine($"outset:{pos}:{kind}:{safeName}");
+        }
+        catch { }
+    }
+
+    // Reports the result of a switch. This DOES wake the device's screen (it shows
+    // the output card), so it must only ever follow a real switch — never a connect
+    // or a poll-detected default-device change. Same rule as SendVolume.
+    // state: "ok" | "none" (nothing assigned to that position) | "fail" (routing failed).
+    public void SendOutputSwitch(int position, string state)
+    {
+        if (!_port.IsOpen) return;
+        try { _port.WriteLine($"out:{(position == 0 ? "a" : "b")}:{state}"); }
+        catch { }
+    }
+
     // Accumulates inbound bytes across DataReceived events so a line split across two
     // reads is still dispatched exactly once.
     private readonly StringBuilder _rxBuffer = new();
@@ -216,10 +252,12 @@ public class SerialManager
 
         if (knobId == "switch")
         {
+            var isInitial = !_sawSwitchLine;
+            _sawSwitchLine = true;
             if (payload is "0" or "a" or "A")
-                SwitchChanged?.Invoke(0);
+                SwitchChanged?.Invoke(0, isInitial);
             else if (payload is "1" or "b" or "B")
-                SwitchChanged?.Invoke(1);
+                SwitchChanged?.Invoke(1, isInitial);
             return;
         }
 

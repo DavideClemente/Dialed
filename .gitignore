@@ -25,3 +25,6 @@ BundleArtifacts/
 /firmware/esp32/manifest.json
 /tools/esptool/esptool.exe
 /Arduino/mixer/build/
+
+# Superpowers brainstorming session artifacts (local mockups)
+.superpowers/

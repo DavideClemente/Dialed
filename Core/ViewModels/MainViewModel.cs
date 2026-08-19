@@ -155,6 +155,8 @@ public partial class MainViewModel : ObservableObject
             HiddenProcesses.Add(process);
 
         Output = new OutputViewModel(_settings, _outputManager, () => SettingsService.Save(_settings));
+        Output.AssignmentChanged += (pos, isHeadset, name) => _serial.SendOutputAssignment(pos, isHeadset, name);
+        Output.SwitchApplied += (pos, state) => _serial.SendOutputSwitch(pos, state);
 
         // Serial must be created before channels are added: AddChannelInternal
         // reads _serial.IsConnected to seed each channel's connected state.
@@ -189,6 +191,7 @@ public partial class MainViewModel : ObservableObject
         _dispatcherQueue.TryEnqueue(() =>
         {
             SyncAllChannels();
+            Output.PushAssignments();
             _serial.RequestFirmwareVersion();
         });
     });
@@ -697,12 +700,12 @@ public partial class MainViewModel : ObservableObject
         });
     }
 
-    private void OnSwitchChanged(int position)
+    private void OnSwitchChanged(int position, bool isInitial)
     {
         _dispatcherQueue.TryEnqueue(() =>
         {
             LogSerial($"switch → position {(position == 0 ? "A" : "B")}");
-            Output.ApplySwitchPosition(position);
+            Output.ApplySwitchPosition(position, isInitial);
         });
     }
 

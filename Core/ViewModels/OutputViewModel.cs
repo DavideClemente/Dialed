@@ -44,6 +44,21 @@ public partial class OutputViewModel : ObservableObject
     [ObservableProperty]
     private string statusText = "";
 
+    // Raised when a position's assigned device changes. MainViewModel forwards this
+    // to the controller as an "outset:" line; the device stores it and keeps showing
+    // whatever screen it's on.
+    public event Action<int, bool, string>? AssignmentChanged;
+
+    // Raised on every completed switch — hardware toggle or in-app card tap — with
+    // "ok", "none" (nothing assigned) or "fail" (routing failed). MainViewModel
+    // forwards this as an "out:" line, which wakes the device's screen.
+    public event Action<int, string>? SwitchApplied;
+
+    // The device only has two glyphs, so this collapses the same name heuristic
+    // GlyphFor uses into the bool the wire format carries.
+    private static bool IsHeadset(OutputDevice? device)
+        => device is not null && GlyphFor(device) == char.ConvertFromUtf32(HeadphoneGlyph);
+
     public bool IsAActive => ActivePosition == OutputPosition.A;
     public bool IsBActive => ActivePosition == OutputPosition.B;
 
@@ -174,6 +189,18 @@ public partial class OutputViewModel : ObservableObject
         OnPropertyChanged(nameof(BDeviceName));
         OnPropertyChanged(nameof(AIconGlyph));
         OnPropertyChanged(nameof(BIconGlyph));
+
+        PushAssignments();
+    }
+
+    // Re-announces both positions. Called by MainViewModel after a (re)connect, so a
+    // device that just booted gets its assignments back before the user touches the
+    // toggle. A position with nothing assigned pushes an empty name, which the
+    // firmware renders as "-".
+    public void PushAssignments()
+    {
+        AssignmentChanged?.Invoke(0, IsHeadset(SelectedDeviceA), SelectedDeviceA?.Name ?? "");
+        AssignmentChanged?.Invoke(1, IsHeadset(SelectedDeviceB), SelectedDeviceB?.Name ?? "");
     }
 
     // Tapping a position card (manual override). Re-selecting the position that's
@@ -194,22 +221,39 @@ public partial class OutputViewModel : ObservableObject
     }
 
     // Driven by the hardware switch. Same no-op guard: if we're already on that
-    // position the default already matches, so don't re-route.
-    public void ApplySwitchPosition(int position)
+    // position the default already matches, so don't re-route — but still report
+    // "ok", because the device has already drawn a pending card and is waiting to
+    // have it confirmed.
+    // isInitial: true only for the very first switch reading reported after a
+    // (re)connect — the firmware's boot-suppression guard already skips its local
+    // display callback for that sample, but still prints the "switch:" line to the
+    // PC, so this side must independently avoid raising SwitchApplied (which would
+    // otherwise wake the device's screen showing "-" before outset: has synced).
+    // App-side state (ActivePosition, StatusText, routing, RefreshDefaults) still
+    // updates normally — only the wire event to the device is suppressed.
+    public void ApplySwitchPosition(int position, bool isInitial = false)
     {
         var target = position == 0 ? OutputPosition.A : OutputPosition.B;
-        if (ActivePosition == target) return;
-        Activate(target);
+        if (ActivePosition == target)
+        {
+            if (!isInitial)
+                SwitchApplied?.Invoke(position, "ok");
+            return;
+        }
+        Activate(target, isInitial);
     }
 
-    private void Activate(OutputPosition position)
+    private void Activate(OutputPosition position, bool isInitial = false)
     {
         var device = position == OutputPosition.A ? SelectedDeviceA : SelectedDeviceB;
         var label = position == OutputPosition.A ? "A" : "B";
+        var index = position == OutputPosition.A ? 0 : 1;
 
         if (device is null)
         {
             StatusText = Loc.Get("Output_AssignFirst", label);
+            if (!isInitial)
+                SwitchApplied?.Invoke(index, "none");
             return;
         }
 
@@ -217,10 +261,14 @@ public partial class OutputViewModel : ObservableObject
         {
             ActivePosition = position;
             StatusText = Loc.Get("Output_Switched", device.Name);
+            if (!isInitial)
+                SwitchApplied?.Invoke(index, "ok");
         }
         else
         {
             StatusText = Loc.Get("Output_SwitchFailed", device.Name);
+            if (!isInitial)
+                SwitchApplied?.Invoke(index, "fail");
         }
 
         RefreshDefaults();

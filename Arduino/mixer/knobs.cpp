@@ -5,6 +5,9 @@
 #define USE_ENCODER 1
 
 static KnobCallback s_cb = nullptr;
+static SwitchCallback s_switchCb = nullptr;
+
+void knobsSetSwitchCallback(SwitchCallback cb) { s_switchCb = cb; }
 
 // ── Potentiometers ──────────────────────────────────────────────────────────
 
@@ -184,8 +187,13 @@ static void switchLoop() {
     swReadChanged = now;
   }
   if (raw != swPos && (now - swReadChanged) > SWITCH_DEBOUNCE_MS) {
+    // swPos < 0 means this is the first sample since boot: it tells the PC where
+    // the toggle is resting, but the user did not touch anything, so it must not
+    // wake the display (which has no assignment data yet and would show "-").
+    bool initial = (swPos < 0);
     swPos = raw;
     Serial.print("switch:"); Serial.println(swPos);
+    if (!initial && s_switchCb) s_switchCb(swPos);
   }
 }
 
