@@ -27,7 +27,9 @@ public class AudioManager
                 : processName;
         }
 
-        private readonly MMDevice _device;
+        // Re-resolved per access — the default output changes underneath us, including
+        // when Dialed's own output switch changes it. See DefaultRenderEndpoint.
+        private readonly DefaultRenderEndpoint _endpoint = new();
         private readonly Dictionary<string, ImageSource?> _iconCache = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, byte[]> _iconRgb565Cache = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, (byte R, byte G, byte B)> _iconColorCache = new(StringComparer.OrdinalIgnoreCase);
@@ -36,18 +38,17 @@ public class AudioManager
         private readonly Dictionary<string, byte[]> _iconBgraCache = new(StringComparer.OrdinalIgnoreCase);
         private static readonly (byte R, byte G, byte B) DefaultAccent = (0, 200, 255);
 
-        public AudioManager()
-        {
-            var enumerator = new MMDeviceEnumerator();
-            _device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-        }
-
         public List<AudioSession> GetSessions()
         {
             var result = new List<AudioSession>();
 
-            _device.AudioSessionManager.RefreshSessions();
-            var sessions = _device.AudioSessionManager.Sessions;
+            // No active output endpoint at all: there is nothing to control, not even
+            // a master channel. Channels fall back to "offline" until one shows up.
+            if (_endpoint.Current is not { } device)
+                return result;
+
+            device.AudioSessionManager.RefreshSessions();
+            var sessions = device.AudioSessionManager.Sessions;
 
             Console.WriteLine("Audio sessions detected:\n");
 
@@ -334,17 +335,26 @@ public class AudioManager
             return writeableBitmap;
         }
         
-        public float GetMasterVolume() => _device.AudioEndpointVolume.MasterVolumeLevelScalar;
+        public float GetMasterVolume() =>
+            _endpoint.Current?.AudioEndpointVolume.MasterVolumeLevelScalar ?? 0f;
 
-        public void SetMasterVolume(float volume) =>
-            _device.AudioEndpointVolume.MasterVolumeLevelScalar = Math.Clamp(volume, 0f, 1f);
+        public void SetMasterVolume(float volume)
+        {
+            if (_endpoint.Current is not { } device)
+                return;
+
+            device.AudioEndpointVolume.MasterVolumeLevelScalar = Math.Clamp(volume, 0f, 1f);
+        }
 
         public float GetVolume(string processName)
         {
             if (processName.Equals(MasterVolumeProcessName, StringComparison.OrdinalIgnoreCase))
                 return GetMasterVolume();
 
-            var sessions = _device.AudioSessionManager.Sessions;
+            if (_endpoint.Current is not { } device)
+                return 0;
+
+            var sessions = device.AudioSessionManager.Sessions;
 
             for (var i = 0; i < sessions.Count; i++)
             {
@@ -379,7 +389,10 @@ public class AudioManager
                 return;
             }
 
-            var sessions = _device.AudioSessionManager.Sessions;
+            if (_endpoint.Current is not { } device)
+                return;
+
+            var sessions = device.AudioSessionManager.Sessions;
 
             for (var i = 0; i < sessions.Count; i++)
             {
@@ -405,9 +418,12 @@ public class AudioManager
         public bool GetMute(string processName)
         {
             if (processName.Equals(MasterVolumeProcessName, StringComparison.OrdinalIgnoreCase))
-                return _device.AudioEndpointVolume.Mute;
+                return _endpoint.Current?.AudioEndpointVolume.Mute ?? false;
 
-            var sessions = _device.AudioSessionManager.Sessions;
+            if (_endpoint.Current is not { } device)
+                return false;
+
+            var sessions = device.AudioSessionManager.Sessions;
 
             for (var i = 0; i < sessions.Count; i++)
             {
@@ -428,13 +444,16 @@ public class AudioManager
 
         public void SetMute(string processName, bool muted)
         {
+            if (_endpoint.Current is not { } device)
+                return;
+
             if (processName.Equals(MasterVolumeProcessName, StringComparison.OrdinalIgnoreCase))
             {
-                _device.AudioEndpointVolume.Mute = muted;
+                device.AudioEndpointVolume.Mute = muted;
                 return;
             }
 
-            var sessions = _device.AudioSessionManager.Sessions;
+            var sessions = device.AudioSessionManager.Sessions;
 
             for (var i = 0; i < sessions.Count; i++)
             {
