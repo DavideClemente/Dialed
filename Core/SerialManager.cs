@@ -117,14 +117,22 @@ public class SerialManager
         catch { }
     }
 
-    public void SendAssignment(int knobIndex, string appName, (byte R, byte G, byte B) color, byte[] iconRgb565)
+    /// <param name="displayName">
+    /// The label the device renders (<see cref="AudioManager.GetDisplayName"/>), not the
+    /// internal process name — the wire carries no identifier here, knob IDs do that.
+    /// The device stores it in a 32-byte buffer and draws it with TFT_eSPI font 2, whose
+    /// glyphs stop at ASCII 127; SerialPort's default ASCII encoding also rewrites any
+    /// higher char as '?'. Both localizations are ASCII today ("System"/"Sistema"), so
+    /// nothing is lost — a non-ASCII label would need a firmware-side font change.
+    /// </param>
+    public void SendAssignment(int knobIndex, string displayName, (byte R, byte G, byte B) color, byte[] iconRgb565)
     {
         if (!_port.IsOpen) return;
         try
         {
             var knobId = $"knob{knobIndex + 1}";
             var hex = $"{color.R:X2}{color.G:X2}{color.B:X2}";
-            var safeName = appName.Replace("\r", "").Replace("\n", "");
+            var safeName = displayName.Replace("\r", "").Replace("\n", "");
             _port.WriteLine($"assign:{knobId}:{hex}:{safeName}");
             if (iconRgb565.Length > 0)
                 _port.WriteLine($"icon:{knobId}:{Convert.ToBase64String(iconRgb565)}");
