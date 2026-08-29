@@ -196,6 +196,26 @@ public partial class MainViewModel : ObservableObject
         });
     });
 
+    // Blank/restore the controller's display around a PC power transition. Both are
+    // driven by MainWindow's WM_POWERBROADCAST handler, which already runs on the UI
+    // thread — no dispatch needed. (SystemEvents.PowerModeChanged was tried first and
+    // never fires in this process, so the window message is the only path that works.)
+    //
+    // Resume deliberately does no resync: the controller keeps its own RAM state
+    // (labels/icons/last volume) across a sleep that doesn't cut its power, so
+    // un-blanking alone restores the right screen. If the controller *did* lose power
+    // and reboot, the reconnect watchdog (CheckConnection) notices the port reappearing
+    // and resyncs on its own.
+    public void SendScreenOff()
+    {
+        if (_serial.IsConnected) _serial.SendScreenOff();
+    }
+
+    public void SendScreenOn()
+    {
+        if (_serial.IsConnected) _serial.SendScreenOn();
+    }
+
     // Detects unplug (target port vanished from the system) and replug (port is back
     // while we're disconnected), tearing down / re-opening the serial handle to match.
     private void CheckConnection()
@@ -472,6 +492,11 @@ public partial class MainViewModel : ObservableObject
 
     private void SyncAllChannels()
     {
+        // A controller that was blanked for suspend/shutdown and kept power stays asleep until told
+        // otherwise — no other message clears blankMode. Idempotent on the device (displayBlank()
+        // early-returns on a same-state call) and silently ignored by pre-1.2.0 firmware.
+        _serial.SendScreenOn();
+
         // The controller resets its idle timeout to a built-in default on boot, so
         // push the configured value whenever we (re)sync after a connect.
         _serial.SendIdleTimeout(IdleTimeoutSeconds * 1000);

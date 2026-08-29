@@ -33,6 +33,8 @@ the same module layout that drops icons/sprites and discards the icon data the P
 - `assign:knob1:RRGGBB:AppName` — label + accent color for a knob
 - `icon:knob1:<base64>` — 64×64 RGB565 icon (~11 KB). **ESP32 only**; the Nano build discards
   these lines without buffering them.
+- `screen:off` / `screen:on` — blank + sleep / wake the display around PC suspend, sleep-resume,
+  and shutdown. **ESP32 only** (`mixer/`); other tiers ignore it.
 
 Knob ids are 1-based (`knob1`…`knobN`); `MAX_KNOBS` in firmware must cover the highest index used.
 

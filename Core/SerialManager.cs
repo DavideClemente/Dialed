@@ -126,6 +126,24 @@ public class SerialManager
         catch { }
     }
 
+    /// <summary>Blanks and sleeps the controller's display (PC suspend/shutdown). Parsed by
+    /// handleScreenLine on the device.</summary>
+    public void SendScreenOff()
+    {
+        if (!_port.IsOpen) return;
+        try { _port.WriteLine("screen:off"); }
+        catch { }
+    }
+
+    /// <summary>Wakes and restores the controller's display (PC resume/reconnect). Parsed by
+    /// handleScreenLine on the device.</summary>
+    public void SendScreenOn()
+    {
+        if (!_port.IsOpen) return;
+        try { _port.WriteLine("screen:on"); }
+        catch { }
+    }
+
     /// <param name="displayName">
     /// The label the device renders (<see cref="AudioManager.GetDisplayName"/>), not the
     /// internal process name — the wire carries no identifier here, knob IDs do that.

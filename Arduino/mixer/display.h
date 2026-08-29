@@ -13,6 +13,7 @@ void displayEnterIdle();
 enum OutState : uint8_t { OUT_PENDING = 0, OUT_OK = 1, OUT_NONE = 2, OUT_FAIL = 3 };
 void displayShowOutput(int pos, uint8_t state);
 
+void displayBlank(bool blank);
 void displayTick();
 
 // GIF-upload progress screen (driven by idlegif.cpp while a new GIF flashes).
