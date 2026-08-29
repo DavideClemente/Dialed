@@ -40,7 +40,7 @@ power-state detection at all today (no `SystemEvents.PowerModeChanged`, no sessi
 
 | Decision | Choice |
 |---|---|
-| Detection mechanism | App-side: `SystemEvents.PowerModeChanged` (suspend/resume) + existing `WM_ENDSESSION` handler (shutdown/logoff) |
+| Detection mechanism | App-side, all in `MainWindow`'s window-proc subclass: `WM_POWERBROADCAST` (suspend/resume) + existing `WM_ENDSESSION` handler (shutdown/logoff) |
 | Protocol | New explicit command pair: `screen:off` / `screen:on` |
 | Blank screen content | Solid black *and* panel sleep (GC9A01 `DISPOFF`+`SLPIN`) — see "Backlight" below |
 | Backlight | Left as-is (hardwired to 3.3V, stays lit). No wiring change; see Non-goals |
@@ -48,13 +48,27 @@ power-state detection at all today (no `SystemEvents.PowerModeChanged`, no sessi
 | Wake behavior | Immediate — screen returns to normal as soon as `screen:on` arrives and the panel's mandatory ~120ms wake settle time elapses; no waiting for a knob touch |
 | Manual app "Quit" | Not treated as suspend/shutdown; screen keeps its current idle-fallback behavior |
 
-**Modern Standby caveat:** `Microsoft.Win32.SystemEvents.PowerModeChanged` (`PowerModes.Suspend`/`Resume`)
-fires on classic S3/S4 sleep transitions, but does NOT fire on Modern Standby (S0ix) systems — Windows uses
-a different notification (`RegisterPowerSettingNotification(GUID_CONSOLE_DISPLAY_STATE)`) for those, which
-this feature does not implement. On a Modern Standby machine, the sleep half of this feature is silently
-inert (shutdown via `WM_ENDSESSION` still works normally). This is a known, accepted limitation — not
-something to implement now — just something to check for before assuming the firmware is broken if the
-screen doesn't blank on sleep during manual verification (see Task 6).
+**Why not `SystemEvents.PowerModeChanged`:** the first implementation used it, and it does not work in
+this app. Hardware verification found the panel never blanked on sleep; file-based instrumentation showed
+the subscription succeeding but the handler *never being invoked* — no `Suspend` and no `Resume` — across
+a sleep/resume cycle confirmed real by Kernel-Power events 42/107, with the process alive throughout.
+Handling `WM_POWERBROADCAST` in `MainWindow`'s existing window-proc subclass fixed it, and is the same
+mechanism already proven in this app for `WM_QUERYENDSESSION`/`WM_ENDSESSION`. Do not reintroduce
+`SystemEvents` here.
+
+**Modern Standby caveat:** `PBT_APMSUSPEND` is raised for classic S3/S4 sleep transitions but not on
+Modern Standby (S0ix) systems, which use `RegisterPowerSettingNotification(GUID_CONSOLE_DISPLAY_STATE)`
+instead — not implemented here. On such a machine the sleep half of this feature would be silently inert
+(shutdown via `WM_ENDSESSION` still works). Accepted limitation; the verification machine is S3, so this
+is untested rather than known-broken.
+
+**Backlight glow (known, by design):** panel sleep cuts the GC9A01's driving circuitry, not the backlight
+LED, which is hardwired to the 3.3V rail — so a blanked screen is uniformly dark but still faintly lit.
+True darkness needs either a UEFI setting that drops USB standby power (e.g. `ErP Ready`), or rewiring
+`BL` to a GPIO. On the standard 4-encoder build **GPIO 2 is free** for that (input-only 35/36/39 cannot
+drive an output; 0 and 12 are riskier strapping pins) and would need a transistor, since the backlight
+draws ~20–60mA — at or past a pin's safe limit. No software path exists: Windows exposes no API that cuts
+VBUS on a port, and USB selective suspend does not affect this board.
 
 **Backlight decision:** offered the option of rewiring `BL` from the 3.3V rail to a GPIO for a true
 backlight cutoff (either sacrificing an encoder to free a pin, or repurposing a strapping pin). Rejected
@@ -122,27 +136,29 @@ public void SendScreenOn()  { if (!_port.IsOpen) return; try { _port.WriteLine("
 
 `Core/ViewModels/MainViewModel.cs`:
 
-- Subscribe to `Microsoft.Win32.SystemEvents.PowerModeChanged` in the constructor. Never explicitly
-  unsubscribed — `MainViewModel` is a process-lifetime singleton and nothing else in the class disposes
-  cleanly either (the refresh/connection timers are never stopped, the tray icon is disposed only as part
-  of process exit).
-- Handler marshals onto `_dispatcherQueue.TryEnqueue(...)` (matching every other cross-thread serial/event
-  callback in this class — `SystemEvents` raises on its own internal thread, not the UI thread):
-  - `PowerModes.Suspend` → if `_serial.IsConnected`, `_serial.SendScreenOff()`.
-  - `PowerModes.Resume` → if `_serial.IsConnected`, `_serial.SendScreenOn()`.
+- Two public passthroughs, `SendScreenOff()` and `SendScreenOn()`, each guarded by `_serial.IsConnected`.
+  Both are called by `MainWindow`'s window proc, which already runs on the UI thread, so neither needs
+  `_dispatcherQueue` — unlike the serial callbacks elsewhere in this class. `MainViewModel` itself does
+  not subscribe to any power event.
 - No explicit resync is triggered on resume. Reasoning: if the controller stayed powered through sleep
   (common when it's on a powered hub or the host doesn't cut VBUS in modern standby), its RAM state
   (`knobLabel`/`knobIcon`/`targetVol`) is untouched, so un-blanking alone is enough to show the correct
   screen. If the controller *did* lose power and rebooted, the existing reconnect watchdog
   (`CheckConnection` in `MainViewModel.cs`) independently detects the port disappearing and reappearing
   and calls `ScheduleResync()` — that path is unchanged and already correct.
-- New public passthrough `SendScreenOff()` on `MainViewModel`, for `MainWindow` to call from outside.
 - `SyncAllChannels()` sends `SendScreenOn()` before its per-channel sync loop. This is the only thing that
   clears `blankMode` on the firmware side after a resync — see `mixer.ino`'s `handleScreenLine` — so every
   connect/reconnect/resync path (first launch, manual reconnect, watchdog replug, post-flash) explicitly
   wakes a controller that was left blanked with power still on.
 
-`MainWindow.xaml.cs` — in the existing `WM_ENDSESSION` case, right before the existing `ExitApp()` call
+`MainWindow.xaml.cs` — the window-proc subclass gains a `WM_POWERBROADCAST` case: `PBT_APMSUSPEND` calls
+`ViewModel.SendScreenOff()`, and both `PBT_APMRESUMEAUTOMATIC` and `PBT_APMRESUMESUSPEND` call
+`ViewModel.SendScreenOn()` (the latter fires only for user-initiated wakes; handling both is safe because
+`displayBlank()` no-ops when already in the requested state). The case falls through to `CallWindowProc`
+so default handling is preserved. Windows holds the suspend until the handler returns, which is what gets
+the blank command out before the machine goes down.
+
+Also in `MainWindow.xaml.cs` — in the existing `WM_ENDSESSION` case, right before the existing `ExitApp()` call
 (only when `wParam != IntPtr.Zero`, i.e. the shutdown wasn't cancelled — same guard already there), add
 `ViewModel.SendScreenOff()`. Best-effort; wrapped by the same try/catch already inside `SerialManager`. The
 next app launch's normal connect/sync flow sends `screen:on` as part of `SyncAllChannels()` (see the App
@@ -154,9 +170,9 @@ only an explicit `screen:on` clears `blankMode`.
 ## Data flow summary
 
 ```
-PC suspends  → SystemEvents.PowerModeChanged(Suspend) → SendScreenOff() → "screen:off" → displayBlank(true)
+PC suspends  → WM_POWERBROADCAST/PBT_APMSUSPEND → SendScreenOff() → "screen:off" → displayBlank(true)
                  → fillScreen(BLACK) + DISPOFF + SLPIN (panel driver powered down; backlight stays lit)
-PC resumes   → SystemEvents.PowerModeChanged(Resume)  → SendScreenOn()  → "screen:on"  → displayBlank(false)
+PC resumes   → WM_POWERBROADCAST/PBT_APMRESUME* → SendScreenOn()  → "screen:on"  → displayBlank(false)
                  → SLPOUT + 120ms settle + DISPON, then normal redraw on the next tick
 PC shuts down → WM_ENDSESSION → ViewModel.SendScreenOff() → "screen:off" → displayBlank(true) → ExitApp()
 Device lost power during sleep → screen already dark (no power) → reboots on resume → existing

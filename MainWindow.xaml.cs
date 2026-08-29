@@ -60,6 +60,21 @@ namespace Dialed
         private const uint WM_ENDSESSION = 0x0016;
         private const int GWLP_WNDPROC = -4;
 
+        // ---- Power transitions (sleep/resume) ----
+        // Windows broadcasts WM_POWERBROADCAST to top-level windows (hidden ones
+        // included, so this still arrives while minimized to tray) and holds the
+        // suspend until handlers return — which is what lets the blank command reach
+        // the controller before the machine actually goes down.
+        //
+        // This replaces SystemEvents.PowerModeChanged, which never fired in this
+        // process: its subscription succeeded but neither Suspend nor Resume was ever
+        // raised across a verified S3 sleep/resume cycle. The window message is the
+        // same mechanism already proven here for WM_QUERYENDSESSION/WM_ENDSESSION.
+        private const uint WM_POWERBROADCAST = 0x0218;
+        private const int PBT_APMSUSPEND = 0x0004;
+        private const int PBT_APMRESUMESUSPEND = 0x0007;   // user-initiated resume
+        private const int PBT_APMRESUMEAUTOMATIC = 0x0012; // always sent on resume
+
         private delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
         [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
@@ -192,6 +207,22 @@ namespace Dialed
         {
             switch (msg)
             {
+                case WM_POWERBROADCAST:
+                    // Both resume events are handled because PBT_APMRESUMESUSPEND only
+                    // arrives for user-initiated wakes; a double wake is harmless, since
+                    // the firmware's displayBlank() no-ops when already in that state.
+                    switch ((int)wParam)
+                    {
+                        case PBT_APMSUSPEND:
+                            ViewModel.SendScreenOff();
+                            break;
+                        case PBT_APMRESUMESUSPEND:
+                        case PBT_APMRESUMEAUTOMATIC:
+                            ViewModel.SendScreenOn();
+                            break;
+                    }
+                    break;
+
                 case WM_QUERYENDSESSION:
                     // Nothing blocks shutdown: settings persist on every change,
                     // so there is no unsaved state to prompt about.
