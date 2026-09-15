@@ -87,7 +87,8 @@ Full architecture docs are in `CLAUDE.md`.
 3. Link any related issues
 4. Wait for review and feedback
 5. Address review comments with new commits (no force-push)
-6. Once approved, your PR will be merged by the maintainer
+6. Your PR must be approved by at least one reviewer before it can be merged
+7. Once approved, the maintainer will merge using **squash commits** to keep master's history clean
 
 ## Questions?
 
