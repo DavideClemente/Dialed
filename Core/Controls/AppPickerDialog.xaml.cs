@@ -25,6 +25,8 @@ public sealed partial class AppPickerDialog : ContentDialog
 
     public List<KnobOption> KnobOptions { get; }
 
+    public bool IsOtherAppsSelected { get; private set; }
+
     public AudioSession? SelectedSession => SessionsList.SelectedItem as AudioSession;
 
     public int SelectedKnobIndex => (KnobCombo.SelectedItem as KnobOption)?.Index ?? _channel.KnobIndex;
@@ -39,12 +41,26 @@ public sealed partial class AppPickerDialog : ContentDialog
         InitializeComponent();
 
         KnobCombo.SelectedItem = KnobOptions.FirstOrDefault(o => o.Index == _channel.KnobIndex);
+        SessionsList.SelectedItem = SelectableSessions.FirstOrDefault(s =>
+            s.ProcessName.Equals(_channel.AppName, StringComparison.OrdinalIgnoreCase));
+        if (_channel.AppName.Equals(ChannelViewModel.OtherAppsName, StringComparison.OrdinalIgnoreCase))
+        {
+            OtherAppsButton.BorderBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(
+                Windows.UI.Color.FromArgb(255, 0x6D, 0x9E, 0xEB));
+            OtherAppsButton.BorderThickness = new Thickness(2);
+        }
 
         _hideInfoBarTimer.Tick += (_, _) =>
         {
             _hideInfoBarTimer.Stop();
             HideInfoBar.IsOpen = false;
         };
+    }
+
+    private void OnOtherAppsClick(object sender, RoutedEventArgs e)
+    {
+        IsOtherAppsSelected = true;
+        Hide();
     }
 
     private void OnHideClick(object sender, RoutedEventArgs e)

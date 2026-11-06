@@ -16,11 +16,14 @@ namespace Dialed.Core;
 public class AudioManager
     {
         public const string MasterVolumeProcessName = "System Volume";
+        public const string MicrophoneVolumeProcessName = "Microphone";
 
         public static string GetDisplayName(string processName)
         {
             if (processName.Equals(MasterVolumeProcessName, StringComparison.OrdinalIgnoreCase))
                 return Loc.Get("System_DisplayName");
+            if (processName.Equals(MicrophoneVolumeProcessName, StringComparison.OrdinalIgnoreCase))
+                return Loc.Get("Microphone_DisplayName");
 
             return processName.Length > 0
                 ? char.ToUpperInvariant(processName[0]) + processName[1..]
@@ -30,6 +33,7 @@ public class AudioManager
         // Re-resolved per access — the default output changes underneath us, including
         // when Dialed's own output switch changes it. See DefaultRenderEndpoint.
         private readonly DefaultRenderEndpoint _endpoint = new();
+        private readonly DefaultCaptureEndpoint _captureEndpoint = new();
         private readonly Dictionary<string, ImageSource?> _iconCache = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, byte[]> _iconRgb565Cache = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, (byte R, byte G, byte B)> _iconColorCache = new(StringComparer.OrdinalIgnoreCase);
@@ -90,6 +94,16 @@ public class AudioManager
                 DisplayName = GetDisplayName(MasterVolumeProcessName),
                 Volume = GetMasterVolume(),
             });
+
+            if (_captureEndpoint.Current is not null)
+            {
+                result.Add(new AudioSession
+                {
+                    ProcessName = MicrophoneVolumeProcessName,
+                    DisplayName = GetDisplayName(MicrophoneVolumeProcessName),
+                    Volume = GetMicrophoneVolume(),
+                });
+            }
 
             return result
                 .GroupBy(x => x!.ProcessName)
@@ -338,18 +352,31 @@ public class AudioManager
         public float GetMasterVolume() =>
             _endpoint.Current?.AudioEndpointVolume.MasterVolumeLevelScalar ?? 0f;
 
+        public float GetMicrophoneVolume() =>
+            _captureEndpoint.Current?.AudioEndpointVolume.MasterVolumeLevelScalar ?? 0f;
+
         public void SetMasterVolume(float volume)
         {
-            if (_endpoint.Current is not { } device)
+            if (_endpoint.Current is not { } renderDevice)
                 return;
 
-            device.AudioEndpointVolume.MasterVolumeLevelScalar = Math.Clamp(volume, 0f, 1f);
+            renderDevice.AudioEndpointVolume.MasterVolumeLevelScalar = Math.Clamp(volume, 0f, 1f);
+        }
+
+        public void SetMicrophoneVolume(float volume)
+        {
+            if (_captureEndpoint.Current is not { } captureDevice)
+                return;
+
+            captureDevice.AudioEndpointVolume.MasterVolumeLevelScalar = Math.Clamp(volume, 0f, 1f);
         }
 
         public float GetVolume(string processName)
         {
             if (processName.Equals(MasterVolumeProcessName, StringComparison.OrdinalIgnoreCase))
                 return GetMasterVolume();
+            if (processName.Equals(MicrophoneVolumeProcessName, StringComparison.OrdinalIgnoreCase))
+                return GetMicrophoneVolume();
 
             if (_endpoint.Current is not { } device)
                 return 0;
@@ -388,6 +415,11 @@ public class AudioManager
                 SetMasterVolume(volume);
                 return;
             }
+            if (processName.Equals(MicrophoneVolumeProcessName, StringComparison.OrdinalIgnoreCase))
+            {
+                SetMicrophoneVolume(volume);
+                return;
+            }
 
             if (_endpoint.Current is not { } device)
                 return;
@@ -419,6 +451,8 @@ public class AudioManager
         {
             if (processName.Equals(MasterVolumeProcessName, StringComparison.OrdinalIgnoreCase))
                 return _endpoint.Current?.AudioEndpointVolume.Mute ?? false;
+            if (processName.Equals(MicrophoneVolumeProcessName, StringComparison.OrdinalIgnoreCase))
+                return _captureEndpoint.Current?.AudioEndpointVolume.Mute ?? false;
 
             if (_endpoint.Current is not { } device)
                 return false;
@@ -444,16 +478,28 @@ public class AudioManager
 
         public void SetMute(string processName, bool muted)
         {
-            if (_endpoint.Current is not { } device)
-                return;
-
             if (processName.Equals(MasterVolumeProcessName, StringComparison.OrdinalIgnoreCase))
             {
-                device.AudioEndpointVolume.Mute = muted;
+                if (_endpoint.Current is not { } renderDevice)
+                    return;
+
+                renderDevice.AudioEndpointVolume.Mute = muted;
                 return;
             }
 
-            var sessions = device.AudioSessionManager.Sessions;
+            if (processName.Equals(MicrophoneVolumeProcessName, StringComparison.OrdinalIgnoreCase))
+            {
+                if (_captureEndpoint.Current is not { } captureDevice)
+                    return;
+
+                captureDevice.AudioEndpointVolume.Mute = muted;
+                return;
+            }
+
+            if (_endpoint.Current is not { } renderDeviceForSessions)
+                return;
+
+            var sessions = renderDeviceForSessions.AudioSessionManager.Sessions;
 
             for (var i = 0; i < sessions.Count; i++)
             {

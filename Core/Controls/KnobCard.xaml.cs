@@ -89,8 +89,16 @@ public sealed partial class KnobCard : UserControl
 
     public string FormatPercent(double volume) => $"{volume:0}%";
 
-    // Segoe Fluent icon glyphs: Mute / Volume.
-    public string FormatMuteIcon(bool isMuted) => isMuted ? "" : "";
+    // Segoe Fluent icon glyphs: Mute / Volume, or Microphone for mic channels.
+    public string FormatMuteIcon(bool isMuted, string appName)
+    {
+        // Microphone channel uses microphone icon
+        if (appName?.Equals(AudioManager.MicrophoneVolumeProcessName, StringComparison.OrdinalIgnoreCase) == true)
+            return "\uE720"; // Microphone icon (same for both, color indicates mute)
+
+        // Regular apps use speaker icons
+        return isMuted ? "" : ""; // Muted speaker / Speaker
+    }
 
     public double ConvertMuteToOpacity(bool isMuted) => isMuted ? 0.35 : 1.0;
 
@@ -134,10 +142,13 @@ public sealed partial class KnobCard : UserControl
         var dialog = new AppPickerDialog(Channel) { XamlRoot = XamlRoot };
         var result = await dialog.ShowAsync();
 
-        if (result == ContentDialogResult.Primary)
+        if (result == ContentDialogResult.Primary || dialog.IsOtherAppsSelected)
         {
             Channel.KnobIndex = dialog.SelectedKnobIndex;
-            if (dialog.SelectedSession is AudioSession session)
+
+            if (dialog.IsOtherAppsSelected)
+                Channel.AppName = ChannelViewModel.OtherAppsName;
+            else if (dialog.SelectedSession is AudioSession session)
                 Channel.AppName = session.ProcessName;
         }
         else if (result == ContentDialogResult.Secondary)

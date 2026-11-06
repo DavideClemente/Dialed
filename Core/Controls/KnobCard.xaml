@@ -38,7 +38,7 @@
                                 Background="{x:Bind GetAccentTintBrush(Channel.AccentColor), Mode=OneWay}"
                                 BorderBrush="{x:Bind GetAccentBorderBrush(Channel.AccentColor), Mode=OneWay}">
                             <Grid>
-                                <FontIcon Glyph="&#xE767;"
+                                <FontIcon Glyph="{x:Bind Channel.FallbackIconGlyph, Mode=OneWay}"
                                           FontSize="20"
                                           Foreground="{StaticResource TextDisabledBrush}"
                                           Visibility="{x:Bind ConvertIconFallbackToVisibility(Channel.IconSource), Mode=OneWay}"
@@ -156,7 +156,7 @@
                                 <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent"/>
                             </Button.Resources>
                             <FontIcon
-                                Glyph="{x:Bind FormatMuteIcon(Channel.IsMuted), Mode=OneWay}"
+                                Glyph="{x:Bind FormatMuteIcon(Channel.IsMuted, Channel.AppName), Mode=OneWay}"
                                 FontSize="14"
                                 Foreground="{x:Bind GetMuteIconBrush(Channel.IsMuted), Mode=OneWay}"/>
                         </Button>
