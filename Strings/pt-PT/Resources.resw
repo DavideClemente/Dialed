@@ -197,4 +197,9 @@
   <data name="Flash_Dialog_Port" xml:space="preserve"><value>Porta: {0}</value></data>
   <data name="Flash_Success" xml:space="preserve"><value>Firmware gravado com sucesso.</value></data>
   <data name="Flash_BootHint" xml:space="preserve"><value>Se a gravação não iniciar, mantenha o botão BOOT premido enquanto clica em Gravar.</value></data>
+  <data name="Microphone_DisplayName" xml:space="preserve"><value>Microfone</value></data>
+  <data name="OtherApps_DisplayName" xml:space="preserve"><value>Outras aplica??es</value></data>
+  <data name="OtherApps_DisplayName_Count" xml:space="preserve"><value>Outras aplica??es ({0})</value></data>
+  <data name="OtherApps_Title" xml:space="preserve"><value>Outras aplica??es (restantes)</value></data>
+  <data name="OtherApps_Help" xml:space="preserve"><value>Controlar todas as aplica??es n?o atribu?das a outros controlos</value></data>
 </root>

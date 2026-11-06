@@ -21,6 +21,36 @@ controller's round display shows the app icon and volume of whatever you're adju
 - Runs from the system tray; optional start-with-Windows
 - English and Portuguese (PT-PT) localization
 
+## Microphone and catch-all controls
+
+In a channel's app picker, select **Microphone** to control the default Windows
+microphone's input volume and mute, or **Other Apps (Catch-all)** to control detected
+apps that are not assigned to other knobs. The catch-all excludes the microphone,
+system master volume, and hidden apps. App detection uses the default playback
+device; the catch-all does not span every output device or record audio. Its displayed
+volume and mute reflect the first eligible app; adjusting it applies to all eligible apps.
+
+The **System** channel controls the master volume of the default playback device,
+so changing it affects every app playing through that device. Each app also has its
+own volume level, which works together with the system volume. For example, if you
+launch a browser and play a video, its sound is subject to the current system volume
+and the browser's own volume setting, which Windows may remember from earlier use.
+
+Use **Other Apps (Catch-all)** when you want those unassigned apps quieter or louder
+without changing the system volume or the apps on dedicated channels. For example,
+keep your game and music player on their own knobs, then turn down the catch-all
+knob to lower a browser video's volume along with other detected, unassigned apps.
+Assign the browser to its own channel if you want to adjust it separately from that
+group.
+
+Newly detected apps join the catch-all group, but they keep their current volume
+until you adjust the catch-all control. The catch-all is a control for the group's
+current app volumes; it does not set a default volume for applications launched later.
+
+Microphone discovery currently requires an active playback device as well as a
+default microphone. Test microphone and catch-all volume/mute with the controller
+connected before publishing.
+
 ## Hardware
 
 You need the companion controller: an ESP32 (or Arduino Nano variant) with

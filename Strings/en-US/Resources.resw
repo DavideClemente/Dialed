@@ -197,4 +197,9 @@
   <data name="Flash_Dialog_Port" xml:space="preserve"><value>Port: {0}</value></data>
   <data name="Flash_Success" xml:space="preserve"><value>Firmware flashed successfully.</value></data>
   <data name="Flash_BootHint" xml:space="preserve"><value>If flashing doesn't start, hold the BOOT button on the board while clicking Flash.</value></data>
+  <data name="Microphone_DisplayName" xml:space="preserve"><value>Microphone</value></data>
+  <data name="OtherApps_DisplayName" xml:space="preserve"><value>Other Apps</value></data>
+  <data name="OtherApps_DisplayName_Count" xml:space="preserve"><value>Other Apps ({0})</value></data>
+  <data name="OtherApps_Title" xml:space="preserve"><value>Other Apps (Catch-all)</value></data>
+  <data name="OtherApps_Help" xml:space="preserve"><value>Control all apps not assigned to other knobs</value></data>
 </root>

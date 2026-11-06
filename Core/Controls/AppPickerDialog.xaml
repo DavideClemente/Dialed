@@ -22,6 +22,25 @@
                   DisplayMemberPath="Label" HorizontalAlignment="Stretch" />
 
         <TextBlock Text="{loc:Loc Key=AppPicker_App}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0" />
+
+        <!-- "Other Apps" special option button -->
+        <Button x:Name="OtherAppsButton" Click="OnOtherAppsClick" HorizontalAlignment="Stretch" Margin="0,0,0,8"
+                CornerRadius="6" BorderThickness="1" Padding="10,8"
+                Background="{StaticResource SurfaceCardBrush}"
+                BorderBrush="{StaticResource StrokeDefaultBrush}">
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <FontIcon Glyph="&#xE8A0;" FontSize="16" Foreground="#6D9EEB" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{loc:Loc Key=OtherApps_Title}" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold"/>
+                    <TextBlock Text="{loc:Loc Key=OtherApps_Help}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                </StackPanel>
+            </Grid>
+        </Button>
+
         <ListView x:Name="SessionsList" ItemsSource="{x:Bind SelectableSessions}" SelectionMode="Single"
                   Background="Transparent">
             <ListView.ItemContainerStyle>
